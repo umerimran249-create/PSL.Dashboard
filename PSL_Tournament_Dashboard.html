@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Talking Bat Analytics — PSL Tournament Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #d7e2f0;
+      --blue: #103b82;
+      --blue-2: #0b2e68;
+      --soft: #eef4ff;
+      --accent: #1d4ed8;
+      --good: #0f9d58;
+      --warn: #f59e0b;
+      --bad: #dc2626;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, #edf4ff 100%);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: linear-gradient(135deg, var(--blue-2), var(--blue));
+      color: #fff;
+      border-radius: 20px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .brand h1 { margin: 0; font-size: 28px; letter-spacing: 0.5px; }
+    .brand p  { margin: 6px 0 0; color: #dbeafe; font-size: 13px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .season-badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: .04em;
+    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      border: 0;
+      background: #fff;
+      color: var(--blue-2);
+      font-weight: 700;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,.08);
+      font-size: 13px;
+      transition: background .15s;
+    }
+    .btn:hover { background: #dbeafe; }
+    .btn.secondary { background: #dbeafe; }
+
+    /* ── FILTER PANEL ── */
+    .panel {
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(215,226,240,.75);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1.4fr;
+      gap: 14px;
+      align-items: end;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      margin-bottom: 8px;
+    }
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 800;
+      color: var(--good);
+      font-size: 13px;
+      width: 100%;
+    }
+    .status-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--good);
+      flex-shrink: 0;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* ── HERO STRIP ── */
+    .hero-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .hero-stat {
+      background: linear-gradient(135deg, var(--blue-2), var(--blue));
+      border-radius: 18px;
+      padding: 20px 16px;
+      color: #fff;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .hero-stat .h-label { font-size: 11px; color: #bfdbfe; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+    .hero-stat .h-val   { font-size: 32px; font-weight: 900; margin: 8px 0 4px; line-height: 1; }
+    .hero-stat .h-sub   { font-size: 11px; color: #93c5fd; font-weight: 700; }
+
+    /* ── MAIN GRID ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1.35fr 0.95fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .stat-col { display: flex; flex-direction: column; gap: 18px; }
+
+    /* ── BLOCK ── */
+    .block {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .block h3 {
+      margin: 0;
+      padding: 12px 16px;
+      background: #f6f9ff;
+      border-bottom: 1px solid var(--line);
+      color: var(--blue-2);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .block .inner { padding: 14px 16px; }
+
+    /* ── STANDINGS TABLE ── */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 0; padding: 10px 8px; text-align: center; font-size: 12px; }
+    thead tr { background: var(--blue); }
+    th { color: #fff; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 800; }
+    tbody tr { border-bottom: 1px solid var(--line); transition: background .12s; }
+    tbody tr:last-child { border-bottom: 0; }
+    tbody tr:hover { background: #f0f6ff !important; }
+    td.team-name { font-weight: 800; color: var(--blue-2); text-align: left; white-space: nowrap; }
+    td.pts { font-weight: 900; color: var(--blue); font-size: 15px; }
+    td.nrr-pos { color: var(--good); font-weight: 800; }
+    td.nrr-neg { color: var(--bad);  font-weight: 800; }
+    .pos-num {
+      display: inline-flex;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--soft);
+      align-items: center; justify-content: center;
+      font-weight: 900; font-size: 12px; color: var(--blue-2);
+    }
+    .pos-num.qualify { background: var(--blue); color: #fff; }
+
+    /* ── FORM PILLS ── */
+    .form-row { display: flex; gap: 4px; justify-content: center; }
+    .fp {
+      width: 20px; height: 20px;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 900; color: #fff;
+    }
+    .fp.w { background: var(--good); }
+    .fp.l { background: var(--bad);  }
+
+    /* ── TEAM COLOR DOT ── */
+    .team-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 7px;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+
+    /* ── TABS ── */
+    .tab-bar {
+      display: flex;
+      padding: 14px 16px 0;
+      background: #f6f9ff;
+      border-bottom: 1px solid var(--line);
+      gap: 4px;
+    }
+    .tab-btn {
+      background: none;
+      border: 0;
+      padding: 9px 16px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+      border-radius: 8px 8px 0 0;
+      transition: all .15s;
+    }
+    .tab-btn.active { color: var(--blue-2); border-bottom-color: var(--blue); background: #fff; }
+    .tab-btn:hover:not(.active) { color: var(--ink); background: rgba(0,0,0,.03); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── PERFORMER ROWS ── */
+    .performer-list { display: flex; flex-direction: column; gap: 10px; }
+    .performer-item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fafcff;
+      transition: opacity .2s;
+    }
+    .performer-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .performer-name { font-size: 14px; font-weight: 900; color: var(--blue-2); }
+    .performer-team { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 2px; }
+    .performer-badge { font-size: 22px; font-weight: 900; color: var(--blue); text-align: right; }
+    .performer-badge small { font-size: 11px; font-weight: 700; color: var(--muted); display: block; }
+    .performer-meta { display: flex; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+    .pm-item { text-align: center; }
+    .pm-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 700; letter-spacing: .06em; }
+    .pm-val   { font-size: 13px; font-weight: 900; color: var(--ink); margin-top: 2px; }
+    .progress-track { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+    .progress-fill  { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--accent)); }
+
+    /* ── MATCH CARDS ── */
+    .match-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+    .match-card:last-child { margin-bottom: 0; }
+    .match-header {
+      background: #f6f9ff;
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+    .match-date   { font-size: 11px; color: var(--muted); font-weight: 700; }
+    .match-venue  { font-size: 10px; color: var(--muted); font-weight: 600; max-width: 170px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .match-body   { padding: 10px 12px; }
+    .match-teams  { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .match-team   { text-align: center; flex: 1; }
+    .match-team-name { font-size: 11px; font-weight: 900; color: var(--blue-2); }
+    .match-score  { font-size: 18px; font-weight: 900; color: var(--ink); margin-top: 3px; }
+    .match-vs     { font-size: 11px; font-weight: 800; color: var(--muted); }
+    .match-result {
+      font-size: 11px; font-weight: 800; color: var(--good);
+      background: #e8f5e9; border: 1px solid #a5d6a7;
+      border-radius: 6px; padding: 4px 10px; text-align: center;
+    }
+    .match-footer {
+      padding: 6px 12px;
+      background: #f6f9ff;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mom-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .mom-name  { font-size: 11px; font-weight: 900; color: var(--blue-2); }
+
+    /* ── MINI STAT GRID ── */
+    .mini-stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .mini-stat {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+    }
+    .mini-stat .ms-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 800; letter-spacing: .08em; }
+    .mini-stat .ms-val   { font-size: 20px; color: var(--blue-2); font-weight: 900; margin-top: 6px; }
+    .mini-stat .ms-sub   { font-size: 10px; color: var(--muted); margin-top: 3px; font-weight: 700; }
+
+    /* ── WIN SPLIT BAR ── */
+    .win-bar-wrap { margin-top: 14px; }
+    .win-bar-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 6px; }
+    .split-bar { height: 30px; border-radius: 8px; overflow: hidden; display: flex; }
+    .split-left {
+      background: linear-gradient(90deg, var(--blue-2), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: #fff;
+      transition: width .6s ease;
+    }
+    .split-right {
+      background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: #fff;
+      flex: 1;
+    }
+
+    /* ── QUALIFY NOTE ── */
+    .qualify-note {
+      font-size: 11px; color: var(--blue); font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .q-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); display: inline-block; }
+
+    /* ── SECTION BADGE ── */
+    .section-badge {
+      background: #e8f1ff; color: var(--accent);
+      border-radius: 999px; padding: 2px 10px;
+      font-size: 10px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+
+    /* ── DIM / HIGHLIGHT ── */
+    .filtered-dim { opacity: 0.3; }
+    .highlight-row { background: #fffbf2 !important; }
+
+    /* ── FOOTER STRIP ── */
+    .footer-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, var(--blue-2), var(--blue));
+      border-radius: 16px;
+      margin-top: 18px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #bfdbfe;
+    }
+    .footer-strip span { color: #fff; }
+
+    /* ── PRINT ── */
+    @media print {
+      @page { size: A3 landscape; margin: 10mm; }
+      body { background: #fff; }
+      .wrap { padding: 0; max-width: none; }
+      .panel { display: none !important; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1200px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .hero-strip { grid-template-columns: repeat(3, 1fr); }
+      .filters { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .hero-strip { grid-template-columns: repeat(2, 1fr); }
+      .filters { grid-template-columns: 1fr; }
+      .brand h1 { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── TOPBAR ── -->
+  <div class="topbar">
+    <div class="brand">
+      <h1>Talking Bat Analytics</h1>
+      <p>Pakistan Super League &mdash; Tournament Intelligence Dashboard</p>
+    </div>
+    <div class="topbar-right">
+      <div class="season-badge" id="seasonBadge">PSL 2025 &middot; Group Stage</div>
+      <div class="actions">
+        <button class="btn" onclick="window.print()">Export PDF</button>
+        <button class="btn secondary" onclick="resetFilters()">Reset Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FILTERS ── -->
+  <div class="panel">
+    <div class="filters">
+      <div class="field">
+        <label>Season</label>
+        <select id="seasonSelect" onchange="onSeasonChange()">
+          <option value="PSL 2025">PSL 2025</option>
+          <option value="PSL 2024">PSL 2024</option>
+          <option value="PSL 2023">PSL 2023</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Team Focus</label>
+        <select id="teamSelect" onchange="onTeamChange()">
+          <option value="ALL">All Teams</option>
+          <option value="Islamabad United">Islamabad United</option>
+          <option value="Karachi Kings">Karachi Kings</option>
+          <option value="Lahore Qalandars">Lahore Qalandars</option>
+          <option value="Multan Sultans">Multan Sultans</option>
+          <option value="Peshawar Zalmi">Peshawar Zalmi</option>
+          <option value="Quetta Gladiators">Quetta Gladiators</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Phase</label>
+        <select id="phaseSelect">
+          <option value="ALL">All Phases</option>
+          <option value="GROUP">Group Stage</option>
+          <option value="PLAYOFFS">Playoffs</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tournament Status</label>
+        <div class="status-chip">
+          <div class="status-dot"></div>
+          <span id="statusText">Group Stage &middot; Round 3 of 3</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HERO STRIP ── -->
+  <div class="hero-strip" id="heroStrip"></div>
+
+  <!-- ── MAIN GRID ── -->
+  <div class="main-grid">
+
+    <!-- Column 1: Points Table + Outcome Split -->
+    <div class="stat-col">
+
+      <div class="block">
+        <h3>
+          Points Table
+          <span class="qualify-note"><span class="q-dot"></span>Top 4 qualify</span>
+        </h3>
+        <div style="padding:0;">
+          <table id="standingsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th style="text-align:left;padding-left:12px;">Team</th>
+                <th>P</th>
+                <th>W</th>
+                <th>L</th>
+                <th>NRR</th>
+                <th>Form</th>
+                <th>Pts</th>
+              </tr>
+            </thead>
+            <tbody id="standingsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Match Outcome Split <span class="section-badge" id="outcomeBadge">28 Matches</span></h3>
+        <div class="inner">
+          <div class="mini-stat-grid" id="outcomeGrid"></div>
+          <div class="win-bar-wrap" id="winBarWrap"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Column 2: Top Performers + Tournament Extremes -->
+    <div class="stat-col">
+
+      <div class="block">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'batsmen')">Top Batsmen</button>
+          <button class="tab-btn"        onclick="switchTab(this,'bowlers')">Top Bowlers</button>
+        </div>
+        <div id="tab-batsmen" class="tab-panel active">
+          <div class="inner">
+            <div class="performer-list" id="batsmenList"></div>
+          </div>
+        </div>
+        <div id="tab-bowlers" class="tab-panel">
+          <div class="inner">
+            <div class="performer-list" id="bowlersList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Tournament Extremes</h3>
+        <div class="inner">
+          <div class="mini-stat-grid" id="extremesGrid"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Column 3: Recent Results -->
+    <div class="stat-col">
+      <div class="block">
+        <h3>Recent Results <span class="section-badge">Last 5</span></h3>
+        <div class="inner" id="recentMatchesContainer"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+
+  <!-- ── FOOTER ── -->
+  <div class="footer-strip">
+    <span>Talking Bat Analytics</span>
+    <div id="footerMid">PSL 2025 &middot; Data updated after each match &middot; Group Stage</div>
+    <span>Tournament Intelligence Dashboard &middot; Landscape Ready</span>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+  /* ─────────────────────────────────────────
+     DATA
+  ───────────────────────────────────────── */
+  const DATA = {
+    teamColors: {
+      "Islamabad United":  "#c41e2a",
+      "Karachi Kings":     "#003087",
+      "Lahore Qalandars":  "#00843d",
+      "Multan Sultans":    "#7b2d8b",
+      "Peshawar Zalmi":    "#f7941d",
+      "Quetta Gladiators": "#00a1e0"
+    },
+    seasons: {
+      "PSL 2025": {
+        phase:  "Group Stage · Round 3 of 3",
+        status: "In Progress",
+        standing: [
+          { team: "Islamabad United",  P:12, W:8, L:4, NRR:"+0.643", pts:16, form:["W","W","W","L","W"] },
+          { team: "Lahore Qalandars",  P:12, W:7, L:5, NRR:"+0.412", pts:14, form:["W","L","W","W","L"] },
+          { team: "Multan Sultans",    P:12, W:7, L:5, NRR:"+0.156", pts:14, form:["W","W","L","W","W"] },
+          { team: "Peshawar Zalmi",    P:12, W:6, L:6, NRR:"-0.089", pts:12, form:["L","W","L","W","L"] },
+          { team: "Quetta Gladiators", P:12, W:5, L:7, NRR:"-0.234", pts:10, form:["L","L","W","L","W"] },
+          { team: "Karachi Kings",     P:12, W:3, L:9, NRR:"-0.887", pts: 6, form:["L","L","L","W","L"] }
+        ],
+        batsmen: [
+          { name:"Babar Azam",       team:"Karachi Kings",     runs:412, mat:11, avg:41.2, sr:135.2, hs:"89",   fifties:4 },
+          { name:"Fakhar Zaman",     team:"Lahore Qalandars",  runs:398, mat:11, avg:36.2, sr:141.3, hs:"96*",  fifties:3 },
+          { name:"Mohammad Rizwan",  team:"Multan Sultans",    runs:371, mat:12, avg:43.5, sr:128.9, hs:"92",   fifties:3 },
+          { name:"Sahibzada Farhan", team:"Islamabad United",  runs:345, mat:10, avg:38.3, sr:152.1, hs:"78",   fifties:3 },
+          { name:"Imam-ul-Haq",      team:"Multan Sultans",    runs:328, mat:12, avg:31.2, sr:119.4, hs:"74",   fifties:2 }
+        ],
+        bowlers: [
+          { name:"Shaheen Shah Afridi", team:"Lahore Qalandars",  wkts:18, mat:11, eco:7.82, avg:16.4, best:"4/22" },
+          { name:"Haris Rauf",          team:"Lahore Qalandars",  wkts:16, mat:11, eco:8.45, avg:18.2, best:"3/19" },
+          { name:"Imad Wasim",          team:"Islamabad United",  wkts:15, mat:12, eco:7.21, avg:19.8, best:"3/28" },
+          { name:"Mohammad Amir",       team:"Karachi Kings",     wkts:14, mat:11, eco:8.12, avg:21.3, best:"3/31" },
+          { name:"Abrar Ahmed",         team:"Karachi Kings",     wkts:13, mat:10, eco:7.67, avg:22.1, best:"4/15" }
+        ],
+        matches: [
+          { date:"Mar 27", t1:"Islamabad United",  t2:"Quetta Gladiators", s1:"134/2", s2:"133/8", result:"IU won by 8 wkts",  venue:"National Stadium, Karachi",  mom:"Sahibzada Farhan" },
+          { date:"Mar 26", t1:"Lahore Qalandars",  t2:"Karachi Kings",     s1:"201/4", s2:"156/9", result:"LQ won by 45 runs", venue:"Gaddafi Stadium, Lahore",    mom:"Fakhar Zaman" },
+          { date:"Mar 25", t1:"Multan Sultans",    t2:"Peshawar Zalmi",    s1:"162/4", s2:"161/7", result:"MS won by 6 wkts",  venue:"Multan Cricket Stadium",     mom:"Mohammad Rizwan" },
+          { date:"Mar 24", t1:"Islamabad United",  t2:"Lahore Qalandars",  s1:"178/7", s2:"175/6", result:"IU won by 3 wkts",  venue:"National Stadium, Karachi",  mom:"Imad Wasim" },
+          { date:"Mar 23", t1:"Quetta Gladiators", t2:"Multan Sultans",    s1:"143/8", s2:"145/3", result:"MS won by 7 wkts",  venue:"Pindi Cricket Stadium",      mom:"Rohail Nazir" }
+        ],
+        hero: [
+          { label:"Matches Played",   val:"28",     sub:"of 34 total" },
+          { label:"Total Runs",       val:"47,823",  sub:"across 56 innings" },
+          { label:"Total Wickets",    val:"612",     sub:"avg eco 8.12" },
+          { label:"Highest Total",    val:"221/3",   sub:"Lahore Qalandars" },
+          { label:"Avg 1st Innings",  val:"162",     sub:"runs per match" }
+        ],
+        outcomes: { batFirst:14, fieldFirst:14, total:28, avg1st:162, avg2nd:148 },
+        extremes: [
+          { label:"Highest Total",  val:"221/3",  sub:"Lahore Qalandars" },
+          { label:"Lowest Total",   val:"89/10",  sub:"Karachi Kings" },
+          { label:"Most Sixes",     val:"87",     sub:"Lahore Qalandars" },
+          { label:"Highest Score",  val:"96*",    sub:"Fakhar Zaman" }
+        ]
+      },
+
+      "PSL 2024": {
+        phase:  "Completed",
+        status: "Final: Multan Sultans Champions",
+        standing: [
+          { team:"Multan Sultans",    P:12, W:9, L:3, NRR:"+0.812", pts:18, form:["W","W","W","W","L"] },
+          { team:"Islamabad United",  P:12, W:7, L:5, NRR:"+0.321", pts:14, form:["W","L","W","W","W"] },
+          { team:"Lahore Qalandars",  P:12, W:6, L:6, NRR:"+0.109", pts:12, form:["L","W","L","W","W"] },
+          { team:"Peshawar Zalmi",    P:12, W:6, L:6, NRR:"-0.042", pts:12, form:["W","L","W","L","W"] },
+          { team:"Karachi Kings",     P:12, W:5, L:7, NRR:"-0.445", pts:10, form:["L","W","L","L","W"] },
+          { team:"Quetta Gladiators", P:12, W:3, L:9, NRR:"-0.755", pts: 6, form:["L","L","L","W","L"] }
+        ],
+        batsmen: [
+          { name:"Mohammad Rizwan",  team:"Multan Sultans",    runs:496, mat:12, avg:55.1, sr:144.2, hs:"104*", fifties:3 },
+          { name:"Usman Khan",       team:"Islamabad United",  runs:388, mat:11, avg:43.1, sr:158.3, hs:"93*",  fifties:3 },
+          { name:"Fakhar Zaman",     team:"Lahore Qalandars",  runs:372, mat:11, avg:37.2, sr:139.8, hs:"91",   fifties:3 },
+          { name:"Babar Azam",       team:"Karachi Kings",     runs:351, mat:12, avg:31.9, sr:128.5, hs:"82",   fifties:3 },
+          { name:"Saim Ayub",        team:"Islamabad United",  runs:318, mat:10, avg:35.3, sr:149.1, hs:"79",   fifties:2 }
+        ],
+        bowlers: [
+          { name:"Abbas Afridi",        team:"Lahore Qalandars",  wkts:20, mat:12, eco:7.62, avg:14.8, best:"5/16" },
+          { name:"Usama Mir",           team:"Multan Sultans",    wkts:17, mat:12, eco:7.14, avg:17.2, best:"4/21" },
+          { name:"Shaheen Shah Afridi", team:"Lahore Qalandars",  wkts:16, mat:11, eco:8.02, avg:17.9, best:"3/24" },
+          { name:"Imad Wasim",          team:"Islamabad United",  wkts:14, mat:12, eco:7.44, avg:20.1, best:"3/19" },
+          { name:"Naseem Shah",         team:"Quetta Gladiators", wkts:13, mat:11, eco:8.78, avg:22.4, best:"3/28" }
+        ],
+        matches: [
+          { date:"Mar 18", t1:"Multan Sultans",    t2:"Lahore Qalandars",  s1:"188/5", s2:"162/8", result:"MS won by 26 runs",  venue:"Multan Cricket Stadium",     mom:"Mohammad Rizwan" },
+          { date:"Mar 17", t1:"Islamabad United",  t2:"Peshawar Zalmi",    s1:"176/5", s2:"171/7", result:"IU won by 5 runs",   venue:"National Stadium, Karachi",  mom:"Shadab Khan" },
+          { date:"Mar 16", t1:"Karachi Kings",     t2:"Quetta Gladiators", s1:"154/6", s2:"132/9", result:"KK won by 22 runs",  venue:"National Stadium, Karachi",  mom:"Babar Azam" },
+          { date:"Mar 15", t1:"Multan Sultans",    t2:"Islamabad United",  s1:"197/4", s2:"185/7", result:"MS won by 12 runs",  venue:"Pindi Cricket Stadium",      mom:"Usman Khan" },
+          { date:"Mar 14", t1:"Lahore Qalandars",  t2:"Peshawar Zalmi",    s1:"178/6", s2:"163/8", result:"LQ won by 15 runs",  venue:"Gaddafi Stadium, Lahore",    mom:"Abbas Afridi" }
+        ],
+        hero: [
+          { label:"Matches Played",  val:"34",     sub:"of 34 total" },
+          { label:"Total Runs",      val:"51,244",  sub:"across 68 innings" },
+          { label:"Total Wickets",   val:"668",     sub:"avg eco 8.34" },
+          { label:"Highest Total",   val:"224/5",   sub:"Multan Sultans" },
+          { label:"Avg 1st Innings", val:"168",     sub:"runs per match" }
+        ],
+        outcomes: { batFirst:18, fieldFirst:16, total:34, avg1st:168, avg2nd:154 },
+        extremes: [
+          { label:"Highest Total",  val:"224/5",  sub:"Multan Sultans" },
+          { label:"Lowest Total",   val:"92/10",  sub:"Quetta Gladiators" },
+          { label:"Most Sixes",     val:"94",     sub:"Multan Sultans" },
+          { label:"Highest Score",  val:"104*",   sub:"Mohammad Rizwan" }
+        ]
+      },
+
+      "PSL 2023": {
+        phase:  "Completed",
+        status: "Final: Lahore Qalandars Champions",
+        standing: [
+          { team:"Lahore Qalandars",  P:12, W:9, L:3, NRR:"+0.934", pts:18, form:["W","W","W","W","W"] },
+          { team:"Multan Sultans",    P:12, W:8, L:4, NRR:"+0.442", pts:16, form:["W","W","L","W","W"] },
+          { team:"Peshawar Zalmi",    P:12, W:6, L:6, NRR:"+0.211", pts:12, form:["W","L","W","L","W"] },
+          { team:"Islamabad United",  P:12, W:6, L:6, NRR:"-0.102", pts:12, form:["L","W","L","W","W"] },
+          { team:"Quetta Gladiators", P:12, W:4, L:8, NRR:"-0.534", pts: 8, form:["W","L","L","L","W"] },
+          { team:"Karachi Kings",     P:12, W:3, L:9, NRR:"-0.951", pts: 6, form:["L","L","W","L","L"] }
+        ],
+        batsmen: [
+          { name:"Fakhar Zaman",   team:"Lahore Qalandars",  runs:508, mat:12, avg:48.2, sr:152.1, hs:"109",  fifties:3 },
+          { name:"Babar Azam",     team:"Karachi Kings",     runs:421, mat:11, avg:42.1, sr:131.8, hs:"92",   fifties:4 },
+          { name:"Shan Masood",    team:"Multan Sultans",    runs:398, mat:12, avg:36.2, sr:129.4, hs:"88",   fifties:3 },
+          { name:"Haider Ali",     team:"Peshawar Zalmi",    runs:374, mat:11, avg:34.0, sr:162.4, hs:"83",   fifties:3 },
+          { name:"Shadab Khan",    team:"Islamabad United",  runs:312, mat:12, avg:26.0, sr:158.2, hs:"71*",  fifties:2 }
+        ],
+        bowlers: [
+          { name:"Shaheen Shah Afridi", team:"Lahore Qalandars",  wkts:23, mat:12, eco:7.21, avg:14.2, best:"5/18" },
+          { name:"Haris Rauf",          team:"Lahore Qalandars",  wkts:19, mat:12, eco:8.12, avg:16.8, best:"4/28" },
+          { name:"Mohammad Wasim",      team:"Multan Sultans",    wkts:16, mat:11, eco:7.88, avg:18.1, best:"3/22" },
+          { name:"Zahid Mahmood",       team:"Quetta Gladiators", wkts:15, mat:12, eco:8.34, avg:20.2, best:"3/19" },
+          { name:"Naseem Shah",         team:"Islamabad United",  wkts:14, mat:11, eco:8.54, avg:21.1, best:"4/31" }
+        ],
+        matches: [
+          { date:"Mar 19", t1:"Lahore Qalandars",  t2:"Multan Sultans",    s1:"193/5", s2:"171/8", result:"LQ won by 22 runs",  venue:"Gaddafi Stadium, Lahore",    mom:"Fakhar Zaman" },
+          { date:"Mar 18", t1:"Peshawar Zalmi",    t2:"Karachi Kings",     s1:"158/7", s2:"154/8", result:"PZ won by 4 runs",   venue:"National Stadium, Karachi",  mom:"Haider Ali" },
+          { date:"Mar 17", t1:"Lahore Qalandars",  t2:"Islamabad United",  s1:"189/4", s2:"152/9", result:"LQ won by 37 runs",  venue:"Gaddafi Stadium, Lahore",    mom:"Shaheen Afridi" },
+          { date:"Mar 16", t1:"Multan Sultans",    t2:"Quetta Gladiators", s1:"172/5", s2:"148/8", result:"MS won by 24 runs",  venue:"Multan Cricket Stadium",     mom:"Shan Masood" },
+          { date:"Mar 15", t1:"Islamabad United",  t2:"Peshawar Zalmi",    s1:"165/7", s2:"161/8", result:"IU won by 4 runs",   venue:"Pindi Cricket Stadium",      mom:"Shadab Khan" }
+        ],
+        hero: [
+          { label:"Matches Played",  val:"34",     sub:"of 34 total" },
+          { label:"Total Runs",      val:"49,712",  sub:"across 68 innings" },
+          { label:"Total Wickets",   val:"643",     sub:"avg eco 7.98" },
+          { label:"Highest Total",   val:"221/4",   sub:"Lahore Qalandars" },
+          { label:"Avg 1st Innings", val:"165",     sub:"runs per match" }
+        ],
+        outcomes: { batFirst:17, fieldFirst:17, total:34, avg1st:165, avg2nd:152 },
+        extremes: [
+          { label:"Highest Total",  val:"221/4",  sub:"Lahore Qalandars" },
+          { label:"Lowest Total",   val:"94/10",  sub:"Karachi Kings" },
+          { label:"Most Sixes",     val:"102",    sub:"Lahore Qalandars" },
+          { label:"Highest Score",  val:"109",    sub:"Fakhar Zaman" }
+        ]
+      }
+    }
+  };
+
+  /* ─────────────────────────────────────────
+     STATE
+  ───────────────────────────────────────── */
+  let currentSeason = "PSL 2025";
+  let currentTeam   = "ALL";
+
+  /* ─────────────────────────────────────────
+     HELPERS
+  ───────────────────────────────────────── */
+  function getSeason() { return DATA.seasons[currentSeason]; }
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function teamColor(t) { return DATA.teamColors[t] || "#103b82"; }
+  function dotSpan(team) {
+    return `<span class="team-dot" style="background:${teamColor(team)}"></span>`;
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: HERO STRIP
+  ───────────────────────────────────────── */
+  function renderHero() {
+    document.getElementById("heroStrip").innerHTML =
+      getSeason().hero.map(h => `
+        <div class="hero-stat">
+          <div class="h-label">${esc(h.label)}</div>
+          <div class="h-val">${esc(h.val)}</div>
+          <div class="h-sub">${esc(h.sub)}</div>
+        </div>`).join("");
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: STANDINGS
+  ───────────────────────────────────────── */
+  function renderStandings() {
+    document.getElementById("standingsBody").innerHTML =
+      getSeason().standing.map((r, i) => {
+        const pos  = i + 1;
+        const qual = pos <= 4;
+        const dim  = currentTeam !== "ALL" && r.team !== currentTeam ? " filtered-dim" : "";
+        const hl   = currentTeam !== "ALL" && r.team === currentTeam ? " highlight-row" : "";
+        const nrr  = r.NRR.startsWith("+") ? "nrr-pos" : "nrr-neg";
+        const form = r.form.map(f => `<div class="fp ${f.toLowerCase()}">${f}</div>`).join("");
+        return `
+          <tr class="${dim}${hl}">
+            <td><span class="pos-num ${qual ? "qualify" : ""}">${pos}</span></td>
+            <td class="team-name" style="padding-left:12px;">${dotSpan(r.team)}${esc(r.team)}</td>
+            <td>${r.P}</td>
+            <td>${r.W}</td>
+            <td>${r.L}</td>
+            <td class="${nrr}">${r.NRR}</td>
+            <td><div class="form-row">${form}</div></td>
+            <td class="pts">${r.pts}</td>
+          </tr>`;
+      }).join("");
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: OUTCOME SPLIT
+  ───────────────────────────────────────── */
+  function renderOutcomes() {
+    const o = getSeason().outcomes;
+    const batPct   = Math.round((o.batFirst   / o.total) * 100);
+    const fieldPct = 100 - batPct;
+    document.getElementById("outcomeBadge").textContent = o.total + " Matches";
+    document.getElementById("outcomeGrid").innerHTML = `
+      <div class="mini-stat"><div class="ms-label">Bat First Wins</div><div class="ms-val">${o.batFirst}</div><div class="ms-sub">${batPct}%</div></div>
+      <div class="mini-stat"><div class="ms-label">Field First Wins</div><div class="ms-val">${o.fieldFirst}</div><div class="ms-sub">${fieldPct}%</div></div>
+      <div class="mini-stat"><div class="ms-label">Avg 1st Innings</div><div class="ms-val">${o.avg1st}</div><div class="ms-sub">runs</div></div>
+      <div class="mini-stat"><div class="ms-label">Avg 2nd Innings</div><div class="ms-val">${o.avg2nd}</div><div class="ms-sub">runs</div></div>`;
+    document.getElementById("winBarWrap").innerHTML = `
+      <div class="win-bar-label"><span>Bat 1st (${batPct}%)</span><span>Field 1st (${fieldPct}%)</span></div>
+      <div class="split-bar">
+        <div class="split-left" style="width:${batPct}%">${batPct}%</div>
+        <div class="split-right">${fieldPct}%</div>
+      </div>`;
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: BATSMEN
+  ───────────────────────────────────────── */
+  function renderBatsmen() {
+    const list    = getSeason().batsmen;
+    const maxRuns = list[0].runs;
+    document.getElementById("batsmenList").innerHTML = list.map(b => {
+      const pct = Math.round((b.runs / maxRuns) * 100);
+      const dim = currentTeam !== "ALL" && b.team !== currentTeam ? "opacity:.3" : "";
+      return `
+        <div class="performer-item" style="${dim}">
+          <div class="performer-top">
+            <div>
+              <div class="performer-name">${dotSpan(b.team)}${esc(b.name)}</div>
+              <div class="performer-team">${esc(b.team)}</div>
+            </div>
+            <div class="performer-badge">${b.runs}<small>runs</small></div>
+          </div>
+          <div class="performer-meta">
+            <div class="pm-item"><div class="pm-label">Mat</div><div class="pm-val">${b.mat}</div></div>
+            <div class="pm-item"><div class="pm-label">Avg</div><div class="pm-val">${b.avg}</div></div>
+            <div class="pm-item"><div class="pm-label">SR</div><div class="pm-val">${b.sr}</div></div>
+            <div class="pm-item"><div class="pm-label">HS</div><div class="pm-val">${b.hs}</div></div>
+            <div class="pm-item"><div class="pm-label">50s</div><div class="pm-val">${b.fifties}</div></div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    }).join("");
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: BOWLERS
+  ───────────────────────────────────────── */
+  function renderBowlers() {
+    const list     = getSeason().bowlers;
+    const maxWkts  = list[0].wkts;
+    document.getElementById("bowlersList").innerHTML = list.map(b => {
+      const pct = Math.round((b.wkts / maxWkts) * 100);
+      const dim = currentTeam !== "ALL" && b.team !== currentTeam ? "opacity:.3" : "";
+      return `
+        <div class="performer-item" style="${dim}">
+          <div class="performer-top">
+            <div>
+              <div class="performer-name">${dotSpan(b.team)}${esc(b.name)}</div>
+              <div class="performer-team">${esc(b.team)}</div>
+            </div>
+            <div class="performer-badge">${b.wkts}<small>wickets</small></div>
+          </div>
+          <div class="performer-meta">
+            <div class="pm-item"><div class="pm-label">Mat</div><div class="pm-val">${b.mat}</div></div>
+            <div class="pm-item"><div class="pm-label">Eco</div><div class="pm-val">${b.eco}</div></div>
+            <div class="pm-item"><div class="pm-label">Avg</div><div class="pm-val">${b.avg}</div></div>
+            <div class="pm-item"><div class="pm-label">Best</div><div class="pm-val">${esc(b.best)}</div></div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    }).join("");
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: EXTREMES
+  ───────────────────────────────────────── */
+  function renderExtremes() {
+    document.getElementById("extremesGrid").innerHTML =
+      getSeason().extremes.map(e => `
+        <div class="mini-stat">
+          <div class="ms-label">${esc(e.label)}</div>
+          <div class="ms-val" style="font-size:17px;">${esc(e.val)}</div>
+          <div class="ms-sub">${esc(e.sub)}</div>
+        </div>`).join("");
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: RECENT MATCHES
+  ───────────────────────────────────────── */
+  function renderMatches() {
+    document.getElementById("recentMatchesContainer").innerHTML =
+      getSeason().matches.map(m => `
+        <div class="match-card">
+          <div class="match-header">
+            <div class="match-date">${esc(m.date)}</div>
+            <div class="match-venue">${esc(m.venue)}</div>
+          </div>
+          <div class="match-body">
+            <div class="match-teams">
+              <div class="match-team">
+                <div class="match-team-name">${dotSpan(m.t1)}${esc(m.t1)}</div>
+                <div class="match-score">${esc(m.s1)}</div>
+              </div>
+              <div class="match-vs">vs</div>
+              <div class="match-team">
+                <div class="match-team-name">${dotSpan(m.t2)}${esc(m.t2)}</div>
+                <div class="match-score">${esc(m.s2)}</div>
+              </div>
+            </div>
+            <div class="match-result">${esc(m.result)}</div>
+          </div>
+          <div class="match-footer">
+            <div class="mom-label">Man of the Match</div>
+            <div class="mom-name">${esc(m.mom)}</div>
+          </div>
+        </div>`).join("");
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER: SEASON CHROME
+  ───────────────────────────────────────── */
+  function renderChrome() {
+    const s = getSeason();
+    document.getElementById("seasonBadge").textContent =
+      currentSeason + " \u00B7 " + (currentSeason === "PSL 2025" ? "Group Stage" : "Completed");
+    document.getElementById("statusText").textContent = s.phase;
+    document.getElementById("footerMid").innerHTML =
+      esc(currentSeason) + " &middot; " + esc(s.status) + " &middot; Talking Bat Analytics";
+  }
+
+  /* ─────────────────────────────────────────
+     RENDER ALL
+  ───────────────────────────────────────── */
+  function renderAll() {
+    renderChrome();
+    renderHero();
+    renderStandings();
+    renderOutcomes();
+    renderBatsmen();
+    renderBowlers();
+    renderExtremes();
+    renderMatches();
+  }
+
+  /* ─────────────────────────────────────────
+     EVENT HANDLERS
+  ───────────────────────────────────────── */
+  function onSeasonChange() {
+    currentSeason = document.getElementById("seasonSelect").value;
+    currentTeam   = "ALL";
+    document.getElementById("teamSelect").value = "ALL";
+    renderAll();
+  }
+  function onTeamChange() {
+    currentTeam = document.getElementById("teamSelect").value;
+    renderStandings();
+    renderBatsmen();
+    renderBowlers();
+  }
+  function resetFilters() {
+    document.getElementById("seasonSelect").value = "PSL 2025";
+    document.getElementById("teamSelect").value   = "ALL";
+    document.getElementById("phaseSelect").value  = "ALL";
+    currentSeason = "PSL 2025";
+    currentTeam   = "ALL";
+    renderAll();
+  }
+  function switchTab(btn, tab) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + tab).classList.add("active");
+  }
+
+  /* ─────────────────────────────────────────
+     INIT
+  ───────────────────────────────────────── */
+  renderAll();
+</script>
+</body>
+</html>

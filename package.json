@@ -1,0 +1,11 @@
+{
+  "name": "psl-dashboard",
+  "version": "1.0.0",
+  "description": "Talking Bat Analytics — PSL Dashboard",
+  "scripts": {
+    "dev": "npx serve . --listen 3000 --no-clipboard",
+    "start": "npx serve . --listen 3000 --no-clipboard"
+  },
+  "keywords": ["cricket", "psl", "analytics"],
+  "author": "Talking Bat Analytics"
+}

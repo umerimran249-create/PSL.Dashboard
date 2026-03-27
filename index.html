@@ -1,0 +1,544 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Talking Bat Analytics — Dashboard Hub</title>
+  <style>
+    :root {
+      --bg:      #060713;
+      --panel:   #0d1026;
+      --panel2:  #121737;
+      --ink:     #f5f7ff;
+      --muted:   #a8b1d4;
+      --line:    #232a57;
+      --accent:  #2d8cff;
+      --good:    #22c55e;
+      --warn:    #facc15;
+      --cyan:    #00d4ff;
+      --purple:  #8b5cf6;
+      --pink:    #ff4fa3;
+      --shadow:  0 24px 64px rgba(0,0,0,0.55);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(160deg, #060713 0%, #090b1d 50%, #050611 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── ANIMATED BACKGROUND GRID ── */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(45,140,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45,140,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── GLOW ORBS ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+    }
+    .orb-1 { width: 520px; height: 520px; background: #2d8cff; top: -160px; left: -140px; }
+    .orb-2 { width: 400px; height: 400px; background: #8b5cf6; bottom: -100px; right: -100px; }
+    .orb-3 { width: 300px; height: 300px; background: #00d4ff; top: 40%; left: 50%; transform: translate(-50%,-50%); opacity: 0.10; }
+
+    /* ── PAGE WRAPPER ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid rgba(35,42,87,0.6);
+      background: rgba(6,7,19,0.7);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-badge {
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00d4ff, #2d8cff);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 16px; color: #001322;
+      flex-shrink: 0;
+    }
+    .nav-title {
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 2px;
+      color: #dce7ff;
+    }
+    .nav-sub {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+    .nav-pills {
+      display: flex;
+      gap: 8px;
+    }
+    .nav-pill {
+      background: rgba(45,140,255,0.12);
+      border: 1px solid rgba(45,140,255,0.25);
+      color: var(--cyan);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 90px 24px 60px;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(45,140,255,0.10);
+      border: 1px solid rgba(45,140,255,0.22);
+      border-radius: 999px;
+      padding: 7px 18px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--cyan);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .hero-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    .hero h1 {
+      font-size: clamp(38px, 6vw, 72px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 0%, #93c5fd 50%, #00d4ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+    .hero p {
+      font-size: clamp(15px, 2vw, 19px);
+      color: var(--muted);
+      max-width: 580px;
+      margin: 0 auto 48px;
+      line-height: 1.6;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin-bottom: 72px;
+    }
+    .stat-item {
+      padding: 0 32px;
+      text-align: center;
+      border-right: 1px solid var(--line);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-val {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--accent);
+    }
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    /* ── DASHBOARD CARDS ── */
+    .cards-section {
+      padding: 0 24px 80px;
+    }
+    .cards-section h2 {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      margin-bottom: 36px;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (max-width: 800px) { .cards-grid { grid-template-columns: 1fr; } }
+
+    .dash-card {
+      background: linear-gradient(160deg, #0d1129 0%, #090d20 100%);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 32px;
+      text-decoration: none;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+      cursor: pointer;
+    }
+    .dash-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--card-glow);
+      opacity: 0;
+      transition: opacity .3s ease;
+      border-radius: 24px;
+    }
+    .dash-card:hover { transform: translateY(-6px); box-shadow: var(--shadow); }
+    .dash-card:hover::before { opacity: 1; }
+
+    /* PSL card */
+    .dash-card.psl {
+      --card-glow: linear-gradient(135deg, rgba(34,197,94,0.07) 0%, rgba(45,140,255,0.05) 100%);
+      --accent-col: #22c55e;
+    }
+    .dash-card.psl:hover { border-color: rgba(34,197,94,0.4); }
+
+    /* PSL card */
+    .dash-card.psl {
+      --card-glow: linear-gradient(135deg, rgba(250,204,21,0.07) 0%, rgba(239,68,68,0.05) 100%);
+      --accent-col: #facc15;
+    }
+    .dash-card.psl:hover { border-color: rgba(250,204,21,0.4); }
+
+    .card-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .psl .card-icon { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.2); }
+    .psl .card-icon { background: rgba(250,204,21,0.12); border: 1px solid rgba(250,204,21,0.2); }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .card-titles { flex: 1; }
+    .card-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+    .psl .card-badge { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+    .psl .card-badge { background: rgba(250,204,21,0.15); color: #fde047; border: 1px solid rgba(250,204,21,0.25); }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin: 10px 0 6px;
+      line-height: 1.1;
+    }
+    .card-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Feature list */
+    .card-features {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+    }
+    .feature-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #c8d4f5;
+      font-weight: 600;
+    }
+    .feature-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .psl .feature-dot { background: #22c55e; }
+    .psl .feature-dot { background: #facc15; }
+
+    /* CTA button */
+    .card-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .card-cta:hover { opacity: .88; }
+    .psl .card-cta { background: linear-gradient(90deg, #16a34a, #22c55e); color: #001a08; }
+    .psl .card-cta { background: linear-gradient(90deg, #ca8a04, #facc15); color: #1a1000; }
+    .cta-arrow {
+      font-size: 18px;
+      transition: transform .2s ease;
+    }
+    .dash-card:hover .cta-arrow { transform: translateX(4px); }
+
+    /* ── FEATURE STRIP ── */
+    .feature-strip {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: rgba(13,16,38,0.6);
+      backdrop-filter: blur(8px);
+      padding: 28px 40px;
+      margin-bottom: 80px;
+    }
+    .feature-strip-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) { .feature-strip-inner { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 500px) { .feature-strip-inner { grid-template-columns: 1fr; } }
+    .fs-item { text-align: center; }
+    .fs-icon { font-size: 28px; margin-bottom: 10px; }
+    .fs-title { font-size: 14px; font-weight: 800; color: #dce7ff; margin-bottom: 4px; }
+    .fs-desc  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── FOOTER ── */
+    footer {
+      margin-top: auto;
+      text-align: center;
+      padding: 28px 24px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+    footer span { color: var(--accent); }
+
+    /* ── RESPONSIVE NAV ── */
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .nav-pills { display: none; }
+      .hero { padding: 60px 16px 40px; }
+      .stats-bar { gap: 0; }
+      .stat-item { padding: 0 16px; }
+      .cards-section { padding: 0 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Glow orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="page">
+
+    <!-- ── NAV ── -->
+    <nav>
+      <div class="nav-brand">
+        <div class="nav-badge">TB</div>
+        <div>
+          <div class="nav-title">Talking Bat Analytics</div>
+          <div class="nav-sub">Broadcast Intelligence Mode</div>
+        </div>
+      </div>
+      <div class="nav-pills">
+        <div class="nav-pill">PSL 2026</div>
+        <div class="nav-pill">T20</div>
+        <div class="nav-pill">Live Data</div>
+      </div>
+    </nav>
+
+    <!-- ── HERO ── -->
+    <section class="hero">
+      <div class="hero-eyebrow">
+        <div class="hero-dot"></div>
+        Analytics Dashboard Hub
+      </div>
+      <h1>Precision Cricket<br/>Intelligence</h1>
+      <p>Ball-by-ball analytics, player scorecards, phase breakdowns, and match intelligence — all in one place.</p>
+
+      <!-- Stats bar -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-val">241</div>
+          <div class="stat-lbl">Balls Tracked</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">20</div>
+          <div class="stat-lbl">Players</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">2</div>
+          <div class="stat-lbl">Dashboards</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">13</div>
+          <div class="stat-lbl">Analysis Tabs</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FEATURE STRIP ── -->
+    <div class="feature-strip">
+      <div class="feature-strip-inner">
+        <div class="fs-item">
+          <div class="fs-icon">&#128200;</div>
+          <div class="fs-title">Phase Breakdown</div>
+          <div class="fs-desc">Powerplay, Middle &amp; Death over analysis with batting and bowling metrics</div>
+        </div>
+        <div class="fs-item">
+          <div class="fs-icon">&#127951;</div>
+          <div class="fs-title">Player Scorecards</div>
+          <div class="fs-desc">Landscape A4-ready player cards with shot analysis, matchups &amp; KPIs</div>
+        </div>
+        <div class="fs-item">
+          <div class="fs-icon">&#127987;</div>
+          <div class="fs-title">Wagon Wheels</div>
+          <div class="fs-desc">Zone-by-zone run distribution with interactive SVG wagon wheel charts</div>
+        </div>
+        <div class="fs-item">
+          <div class="fs-icon">&#128196;</div>
+          <div class="fs-title">PDF Export</div>
+          <div class="fs-desc">Print any dashboard or player card directly to PDF for team presentations</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD CARDS ── -->
+    <section class="cards-section">
+      <h2>Select a Dashboard</h2>
+      <div class="cards-grid">
+
+        <!-- PSL Tournament Dashboard -->
+        <a class="dash-card psl" href="PSL_Tournament_Dashboard.html">
+          <div class="card-header">
+            <div class="card-icon">&#127936;</div>
+            <div class="card-titles">
+              <div class="card-badge">Tournament View</div>
+              <div class="card-title">PSL Tournament<br/>Dashboard</div>
+              <div class="card-desc">Full season standings, top performers, recent results and tournament statistics across PSL 2023, 2024 and 2025.</div>
+            </div>
+          </div>
+
+          <div class="card-features">
+            <div class="feature-row"><div class="feature-dot"></div>Points table with NRR &amp; form guide</div>
+            <div class="feature-row"><div class="feature-dot"></div>Top batsmen &amp; bowlers with progress bars</div>
+            <div class="feature-row"><div class="feature-dot"></div>Recent match results with Man of the Match</div>
+            <div class="feature-row"><div class="feature-dot"></div>Tournament extremes &amp; outcome split</div>
+            <div class="feature-row"><div class="feature-dot"></div>Multi-season filter (2023 / 2024 / 2025)</div>
+          </div>
+
+          <div class="card-cta">
+            <span>Open PSL Dashboard</span>
+            <span class="cta-arrow">&#8594;</span>
+          </div>
+        </a>
+
+        <!-- PSL Comparison Dashboard -->
+        <a class="dash-card psl" href="TalkingBat_PSL_Comparison_Dashboard.html">
+          <div class="card-header">
+            <div class="card-icon">&#128202;</div>
+            <div class="card-titles">
+              <div class="card-badge">Match Analysis</div>
+              <div class="card-title">PSL Comparison<br/>Dashboard</div>
+              <div class="card-desc">Ball-by-ball match intelligence with full batting &amp; bowling scorecards, wagon wheels, pitch maps and live player cards from CSV data.</div>
+            </div>
+          </div>
+
+          <div class="card-features">
+            <div class="feature-row"><div class="feature-dot"></div>Match hero with score &amp; KPI strip</div>
+            <div class="feature-row"><div class="feature-dot"></div>13 analysis tabs — batting, bowling, phase, pace/spin</div>
+            <div class="feature-row"><div class="feature-dot"></div>Wagon wheel &amp; categorical pitch map</div>
+            <div class="feature-row"><div class="feature-dot"></div>Landscape player scorecards (All / Pace / Spin)</div>
+            <div class="feature-row"><div class="feature-dot"></div>CSV data embedded — talkingbat.csv (241 balls)</div>
+          </div>
+
+          <div class="card-cta">
+            <span>Open PSL Dashboard</span>
+            <span class="cta-arrow">&#8594;</span>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- ── FOOTER ── -->
+    <footer>
+      <span>Talking Bat Analytics</span> &nbsp;&bull;&nbsp; Precision Ball-by-Ball Intelligence &nbsp;&bull;&nbsp; PSL 2026
+    </footer>
+
+  </div>
+
+</body>
+</html>
