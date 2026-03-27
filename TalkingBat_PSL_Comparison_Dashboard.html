@@ -702,6 +702,11 @@ tbody tr:nth-child(odd) td{ background:#0b0f21; }
     <button class="tab-btn" onclick="openTab('players2', this)">Players Team 2</button>
     <button class="tab-btn" onclick="openTab('notes', this)">Analyst Notes</button>
     <button class="tab-btn" onclick="openTab('playercardtab', this)">&#9654; Player Scorecard</button>
+    <button class="tab-btn" onclick="openTab('phasestats', this)">Phase Stats</button>
+    <button class="tab-btn" onclick="openTab('bothstats', this)">Both Inn Stats</button>
+    <button class="tab-btn" onclick="openTab('overbyover', this)">Over by Over</button>
+    <button class="tab-btn" onclick="openTab('bndsmap', this)">Boundaries Map</button>
+    <button class="tab-btn" onclick="openTab('dotseq', this)">Dot Sequences</button>
   </div>
 
   <div id="overview" class="tab active"></div>
@@ -718,6 +723,11 @@ tbody tr:nth-child(odd) td{ background:#0b0f21; }
   <div id="players2" class="tab"></div>
   <div id="notes" class="tab"></div>
   <div id="playercardtab" class="tab"></div>
+  <div id="phasestats"   class="tab"></div>
+  <div id="bothstats"    class="tab"></div>
+  <div id="overbyover"   class="tab"></div>
+  <div id="bndsmap"      class="tab"></div>
+  <div id="dotseq"       class="tab"></div>
 </div>
 
 <!-- LANDSCAPE PLAYER CARD MODAL -->
@@ -1438,6 +1448,7 @@ function renderSelected(){
   renderScorecards(packet);
   renderPlayers(packet);
   renderNotes(packet);
+  renderAllNewTabs();
 }
 
 const CSV_DATA = [{"m":"569","in":1,"ov":0,"bl":1,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"Seam In","cn":"Inside Edge","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},
@@ -2091,10 +2102,647 @@ function renderPlayerCardTab(){
 }
 
 
+
+/* ═══════════════════════════════════════════════════════════
+   NEW ANALYSIS TABS  —  injected styles + rendering functions
+   Tabs: Phase Stats | Both Inn Stats | Over by Over
+         Boundaries Map | Dot Sequences
+═══════════════════════════════════════════════════════════ */
+(function injectNewStyles(){
+  const s = document.createElement("style");
+  s.textContent = `
+    /* ── over-by-over bar ── */
+    .ov-bar-cell { position:relative; min-width:110px; }
+    .ov-bg-bar   { height:26px; background:#0b1024; border:1px solid #1f2854; border-radius:7px; overflow:hidden; display:flex; align-items:center; padding:0 8px; gap:6px; }
+    .ov-bg-fill  { position:absolute; left:0; top:0; height:100%; border-radius:7px; opacity:.35; }
+    .ov-run-lbl  { position:relative; z-index:1; font-weight:900; font-size:13px; color:#f5f7ff; }
+    .ov-wkt-lbl  { position:relative; z-index:1; margin-left:auto; color:#ef4444; font-weight:900; font-size:11px; }
+    .ov-phase-pp { color:#22c55e; font-weight:800; }
+    .ov-phase-mi { color:#2d8cff; font-weight:800; }
+    .ov-phase-de { color:#f59e0b; font-weight:800; }
+    /* ── ball sequence dot ── */
+    .seq-ball    { width:28px; height:28px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; margin:2px; vertical-align:middle; }
+    .sb-dot  { background:rgba(239,68,68,.25); color:#f87171; border:1px solid rgba(239,68,68,.45); }
+    .sb-1    { background:rgba(34,197,94,.2);  color:#4ade80; border:1px solid rgba(34,197,94,.35); }
+    .sb-2    { background:rgba(22,163,74,.2);  color:#86efac; border:1px solid rgba(22,163,74,.35); }
+    .sb-3    { background:rgba(21,128,61,.2);  color:#a7f3d0; border:1px solid rgba(21,128,61,.35); }
+    .sb-4    { background:rgba(45,140,255,.25);color:#60a5fa; border:1px solid rgba(45,140,255,.45); }
+    .sb-6    { background:rgba(139,92,246,.25);color:#c4b5fd; border:1px solid rgba(139,92,246,.45); }
+    .sb-w    { background:rgba(239,68,68,.1);  color:#fca5a5; border:1px solid #374151; font-size:9px; }
+    .sb-wide { background:rgba(245,158,11,.2); color:#fde68a; border:1px solid rgba(245,158,11,.35); font-size:9px; }
+    .seq-block   { background:#0b1024; border:1px solid #1f2854; border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+    .seq-header  { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .seq-title   { font-size:13px; font-weight:800; color:#dce7ff; }
+    .seq-streak  { background:rgba(239,68,68,.18); border:1px solid rgba(239,68,68,.35); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:800; color:#ef4444; }
+    .streak-good { background:rgba(34,197,94,.18);  border-color:rgba(34,197,94,.35);  color:#4ade80; }
+    /* ── stat compare row ── */
+    .sc-row  { display:grid; grid-template-columns:1fr 160px 1fr; gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid #141c3a; }
+    .sc-row:last-child { border-bottom:0; }
+    .sc-v1   { font-size:15px; font-weight:900; color:#f5f7ff; }
+    .sc-v2   { font-size:15px; font-weight:900; color:#f5f7ff; text-align:right; }
+    .sc-mid  { text-align:center; font-size:11px; color:#a8b1d4; font-weight:700; text-transform:uppercase; letter-spacing:.07em; }
+    .bar-h   { height:8px; border-radius:999px; background:#11183d; overflow:hidden; margin-top:4px; }
+    .bar-h-fill { height:100%; border-radius:999px; }
+    /* ── phase pill ── */
+    .ph-pill-pp { background:rgba(34,197,94,.15);  color:#4ade80; border:1px solid rgba(34,197,94,.3);  border-radius:999px; padding:3px 10px; font-size:11px; font-weight:800; }
+    .ph-pill-mi { background:rgba(45,140,255,.15); color:#60a5fa; border:1px solid rgba(45,140,255,.3); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:800; }
+    .ph-pill-de { background:rgba(245,158,11,.15); color:#fde68a; border:1px solid rgba(245,158,11,.3); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:800; }
+    /* ── bnd chips ── */
+    .chip-4  { background:rgba(45,140,255,.2);  color:#60a5fa;  border:1px solid rgba(45,140,255,.35); border-radius:6px; padding:2px 8px; font-size:11px; font-weight:900; display:inline-block; margin:2px; }
+    .chip-6  { background:rgba(139,92,246,.2);  color:#c4b5fd;  border:1px solid rgba(139,92,246,.35); border-radius:6px; padding:2px 8px; font-size:11px; font-weight:900; display:inline-block; margin:2px; }
+    .chip-dot{ background:rgba(239,68,68,.2);   color:#f87171;  border:1px solid rgba(239,68,68,.35);  border-radius:6px; padding:2px 8px; font-size:11px; font-weight:900; display:inline-block; margin:2px; }
+    /* ── dot seq summary grid ── */
+    .seq-summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
+    .seq-kpi { background:#0a1027; border:1px solid #1f2854; border-radius:16px; padding:14px; text-align:center; }
+    .seq-kpi .sq-label { font-size:11px; color:#a8b1d4; text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+    .seq-kpi .sq-val   { font-size:28px; font-weight:900; margin-top:6px; }
+    .sq-2 { color:#facc15; }
+    .sq-3 { color:#f59e0b; }
+    .sq-4 { color:#ef4444; }
+    .sq-5 { color:#dc2626; }
+    /* ── bnd shot table ── */
+    .bnd-shot-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media(max-width:900px){ .bnd-shot-grid{grid-template-columns:1fr;} .seq-summary-grid{grid-template-columns:1fr 1fr;} }
+  `;
+  document.head.appendChild(s);
+})();
+
+/* ══════════════════════════════════════════════════════
+   HELPER: phase label class
+══════════════════════════════════════════════════════ */
+function phPillClass(ph){ return ph==="Powerplay"?"ph-pill-pp":ph==="Middle"?"ph-pill-mi":"ph-pill-de"; }
+function ovPhaseClass(ph){ return ph==="Powerplay"?"ov-phase-pp":ph==="Middle"?"ov-phase-mi":"ov-phase-de"; }
+
+/* ══════════════════════════════════════════════════════
+   HELPER: stat compare row (Inn1 vs Inn2)
+══════════════════════════════════════════════════════ */
+function scRow(v1, label, v2, lowerBetter){
+  const n1=Number(v1)||0, n2=Number(v2)||0, tot=Math.max(n1+n2,1);
+  const p1=(n1/tot)*100, p2=(n2/tot)*100;
+  const c1=lowerBetter?(n1<=n2?"#22c55e":"#ef4444"):(n1>=n2?"#22c55e":"#ef4444");
+  const c2=lowerBetter?(n2<=n1?"#22c55e":"#ef4444"):(n2>=n1?"#22c55e":"#ef4444");
+  return `<div class="sc-row">
+    <div><div class="sc-v1">${fmt(v1)}</div><div class="bar-h"><div class="bar-h-fill" style="width:${p1}%;background:${c1}"></div></div></div>
+    <div class="sc-mid">${esc(label)}</div>
+    <div><div class="sc-v2">${fmt(v2)}</div><div class="bar-h"><div class="bar-h-fill" style="width:${p2}%;background:${c2};float:right"></div></div></div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   HELPER: compute phase data from CSV rows
+══════════════════════════════════════════════════════ */
+function phaseDataFromRows(rows, ph){
+  const pr  = rows.filter(r=>getPhase(parseInt(r.ov))===ph);
+  if(!pr.length) return null;
+  const legal = pr.filter(r=>r.blt!=="Wide");
+  const bc   = legal.length;
+  const runs = pr.reduce((s,r)=>s+(parseInt(r.tr)||0),0);
+  const wkts = pr.filter(r=>r.dk&&r.dk!=="").length;
+  const dots = legal.filter(r=>(parseInt(r.tr)||0)===0).length;
+  const fours= pr.filter(r=>parseInt(r.br)===4).length;
+  const sixes= pr.filter(r=>parseInt(r.br)===6).length;
+  const ones = pr.filter(r=>parseInt(r.br)===1).length;
+  const twos = pr.filter(r=>parseInt(r.br)===2).length;
+  const threes=pr.filter(r=>parseInt(r.br)===3).length;
+  return {
+    phase:ph, runs, balls:bc, wkts,
+    rr:  bc>0 ? +((runs/bc)*6).toFixed(2) : 0,
+    sr:  bc>0 ? +((runs/bc)*100).toFixed(1): 0,
+    dots, dot_pct: bc>0?+((dots/bc)*100).toFixed(1):0,
+    fours, sixes, ones, twos, threes,
+    bnd_pct: bc>0?+(((fours+sixes)/bc)*100).toFixed(1):0,
+    rot_pct: bc>0?+((ones+twos+threes)/bc*100).toFixed(1):0
+  };
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 1 — PHASE WISE STATS
+══════════════════════════════════════════════════════ */
+function renderPhaseStats(){
+  const inn1  = CSV_DATA.filter(r=>r.in===1);
+  const inn2  = CSV_DATA.filter(r=>r.in===2);
+  const team1 = inn1.length ? inn1[0].btt : "Innings 1";
+  const team2 = inn2.length ? inn2[0].btt : "Innings 2";
+  const phases= ["Powerplay","Middle","Death"];
+
+  function innTable(rows, team, num){
+    const data = phases.map(ph=>phaseDataFromRows(rows,ph)).filter(Boolean);
+    const hdr  = ["Phase","R","Balls","W","RR","SR","Dots","Dot%","4s","6s","BND%","1s","2s","3s","ROT%"];
+    const trows= data.map(d=>[d.phase,d.runs,d.balls,d.wkts,d.rr,d.sr,d.dots,d.dot_pct,d.fours,d.sixes,d.bnd_pct,d.ones,d.twos,d.threes,d.rot_pct]);
+    const heat = [null,null,null,{type:"lower",good:1,bad:3},{type:"higher",good:9,bad:7},{type:"higher",good:140,bad:100},
+                  null,{type:"lower",good:25,bad:45},null,null,{type:"higher",good:20,bad:10},null,null,null,{type:"higher",good:30,bad:15}];
+    return `<div class="card"><div class="section-title">Inn ${num}: ${esc(team)}</div><div class="section-sub">Phase breakdown with runs, wickets, scoring rate, dot%, rotation% and boundary%.</div>${table(hdr,trows,heat)}</div>`;
+  }
+
+  const d1 = phases.map(ph=>phaseDataFromRows(inn1,ph)||{});
+  const d2 = phases.map(ph=>phaseDataFromRows(inn2,ph)||{});
+
+  const compHtml = phases.map((ph,i)=>`
+    <div class="phase-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="font-size:16px;font-weight:900;color:#dce7ff;">${ph}</div>
+        <span class="${phPillClass(ph)}">${ph==="Powerplay"?"Ov 1-6":ph==="Middle"?"Ov 7-15":"Ov 16-20"}</span>
+      </div>
+      ${metricRow(d1[i].runs,   "Runs",       d2[i].runs)}
+      ${metricRow(d1[i].rr,     "Run Rate",   d2[i].rr)}
+      ${metricRow(d1[i].sr,     "Strike Rate",d2[i].sr)}
+      ${metricRow(d1[i].wkts,   "Wickets",    d2[i].wkts, true)}
+      ${metricRow(d1[i].dot_pct,"Dot %",      d2[i].dot_pct, true)}
+      ${metricRow(d1[i].fours,  "Fours",      d2[i].fours)}
+      ${metricRow(d1[i].sixes,  "Sixes",      d2[i].sixes)}
+      ${metricRow(d1[i].bnd_pct,"Boundary %", d2[i].bnd_pct)}
+      ${metricRow(d1[i].rot_pct,"Rotation %", d2[i].rot_pct)}
+    </div>`).join("");
+
+  document.getElementById("phasestats").innerHTML = `
+    <div class="card">
+      <div class="section-title">Phase Wise Stats</div>
+      <div class="section-sub">Powerplay (Ov 1–6) · Middle (Ov 7–15) · Death (Ov 16–20) — full batting metrics per phase per innings.</div>
+    </div>
+    ${innTable(inn1,team1,1)}
+    ${innTable(inn2,team2,2)}
+    <div class="card">
+      <div class="section-title">Phase Wise Comparison — ${esc(team1)} vs ${esc(team2)}</div>
+      <div class="section-sub">Side-by-side metric bars for each phase. Left = Inn 1, Right = Inn 2.</div>
+      <div class="phase-cards">${compHtml}</div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 2 — BOTH INNINGS STATS
+══════════════════════════════════════════════════════ */
+function renderBothStats(){
+  const inn1  = CSV_DATA.filter(r=>r.in===1);
+  const inn2  = CSV_DATA.filter(r=>r.in===2);
+  const team1 = inn1.length ? inn1[0].btt : "Innings 1";
+  const team2 = inn2.length ? inn2[0].btt : "Innings 2";
+
+  function innStats(rows){
+    const legal= rows.filter(r=>r.blt!=="Wide");
+    const bc   = legal.length;
+    const runs = rows.reduce((s,r)=>s+(parseInt(r.tr)||0),0);
+    const wkts = rows.filter(r=>r.dk&&r.dk!=="").length;
+    const dots = legal.filter(r=>(parseInt(r.tr)||0)===0).length;
+    const fours= rows.filter(r=>parseInt(r.br)===4).length;
+    const sixes= rows.filter(r=>parseInt(r.br)===6).length;
+    const ones = rows.filter(r=>parseInt(r.br)===1).length;
+    const twos = rows.filter(r=>parseInt(r.br)===2).length;
+    const threes=rows.filter(r=>parseInt(r.br)===3).length;
+    const wides= rows.filter(r=>r.blt==="Wide").length;
+    const paceW= rows.filter(r=>r.bt==="PACE"&&r.dk&&r.dk!=="").length;
+    const spinW= rows.filter(r=>r.bt==="SPIN"&&r.dk&&r.dk!=="").length;
+    return {bc,runs,wkts,dots,fours,sixes,ones,twos,threes,wides,paceW,spinW,
+      rr:bc>0?+((runs/bc)*6).toFixed(2):0,
+      dot_pct:bc>0?+((dots/bc)*100).toFixed(1):0,
+      bnd_pct:bc>0?+(((fours+sixes)/bc)*100).toFixed(1):0,
+      rot_pct:bc>0?+((ones+twos+threes)/bc*100).toFixed(1):0,
+      avg:wkts>0?+(runs/wkts).toFixed(1):runs
+    };
+  }
+
+  const s1=innStats(inn1), s2=innStats(inn2);
+
+  // batting scorecard
+  function batCard(rows,team,num){
+    const batters=[...new Set(rows.map(r=>r.bat.trim()))];
+    const trows=batters.map(b=>{
+      const br=rows.filter(r=>r.bat.trim()===b);
+      const legal=br.filter(r=>r.blt!=="Wide");
+      const runs=br.reduce((s,r)=>s+(parseInt(r.br)||0),0);
+      const balls=legal.length;
+      const fours=br.filter(r=>parseInt(r.br)===4).length;
+      const sixes=br.filter(r=>parseInt(r.br)===6).length;
+      const dk=CSV_DATA.find(r=>r.pd&&r.pd.trim()===b);
+      const sr=balls>0?+((runs/balls)*100).toFixed(1):0;
+      return [b,dk?dk.dk:"not out",runs,balls,fours,sixes,sr];
+    });
+    const heat=[null,null,null,null,null,null,{type:"higher",good:130,bad:90}];
+    return `<div><h4>Inn ${num}: ${esc(team)} — Batting</h4>${table(["Batter","Dismissal","R","B","4s","6s","SR"],trows,heat)}</div>`;
+  }
+
+  // bowling scorecard
+  function bowlCard(rows,battingTeam,bowlingTeam,num){
+    const bowlers=[...new Set(rows.map(r=>r.bwl.trim()))];
+    const trows=bowlers.map(b=>{
+      const br=rows.filter(r=>r.bwl.trim()===b);
+      const legal=br.filter(r=>r.blt!=="Wide");
+      const runsConc=br.reduce((s,r)=>s+(parseInt(r.tr)||0),0);
+      const balls=legal.length;
+      const overs=+(balls/6).toFixed(1);
+      const wkts=br.filter(r=>r.dk&&r.dk!=="").length;
+      const fours=br.filter(r=>parseInt(r.br)===4).length;
+      const sixes=br.filter(r=>parseInt(r.br)===6).length;
+      const dots=legal.filter(r=>(parseInt(r.tr)||0)===0).length;
+      const eco=balls>0?+((runsConc/balls)*6).toFixed(2):0;
+      return [b,overs,runsConc,wkts,fours,sixes,dots,eco];
+    });
+    const heat=[null,null,null,{type:"higher",good:2,bad:0},null,null,{type:"higher",good:5,bad:2},{type:"lower",good:7,bad:10}];
+    return `<div><h4>Inn ${num}: ${esc(bowlingTeam)} — Bowling</h4>${table(["Bowler","Ov","Runs","W","4s","6s","Dots","Eco"],trows,heat)}</div>`;
+  }
+
+  const team2raw=inn1.length?inn1[0].bwt:team2;
+  const team1raw=inn2.length?inn2[0].bwt:team1;
+
+  document.getElementById("bothstats").innerHTML = `
+    <div class="card">
+      <div class="section-title">Both Innings — Head to Head Stats</div>
+      <div class="section-sub">Complete side-by-side comparison of both innings across all batting metrics.</div>
+      <div style="font-size:13px;font-weight:700;color:#a8b1d4;display:grid;grid-template-columns:1fr 160px 1fr;margin-bottom:4px;">
+        <div>${esc(team1)}</div><div></div><div style="text-align:right">${esc(team2)}</div>
+      </div>
+      ${scRow(s1.runs,    "Total Runs",     s2.runs)}
+      ${scRow(s1.bc,      "Legal Balls",    s2.bc)}
+      ${scRow(s1.wkts,    "Wickets",        s2.wkts, true)}
+      ${scRow(s1.rr,      "Run Rate",       s2.rr)}
+      ${scRow(s1.avg,     "Batting Avg",    s2.avg)}
+      ${scRow(s1.fours,   "Fours",          s2.fours)}
+      ${scRow(s1.sixes,   "Sixes",          s2.sixes)}
+      ${scRow(s1.dots,    "Dots",           s2.dots, true)}
+      ${scRow(s1.dot_pct, "Dot %",          s2.dot_pct, true)}
+      ${scRow(s1.bnd_pct, "Boundary %",     s2.bnd_pct)}
+      ${scRow(s1.rot_pct, "Rotation %",     s2.rot_pct)}
+      ${scRow(s1.ones,    "Singles",        s2.ones)}
+      ${scRow(s1.twos,    "Doubles",        s2.twos)}
+      ${scRow(s1.threes,  "Triples",        s2.threes)}
+      ${scRow(s1.wides,   "Wides",          s2.wides, true)}
+      ${scRow(s1.paceW,   "Pace Wickets",   s2.paceW)}
+      ${scRow(s1.spinW,   "Spin Wickets",   s2.spinW)}
+    </div>
+    <div class="grid-2">
+      <div class="card">${batCard(inn1,team1,1)}</div>
+      <div class="card">${batCard(inn2,team2raw,2)}</div>
+    </div>
+    <div class="grid-2">
+      <div class="card">${bowlCard(inn1,team1,team2raw,1)}</div>
+      <div class="card">${bowlCard(inn2,team2raw,team1,2)}</div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 3 — OVER BY OVER COMPARISON
+══════════════════════════════════════════════════════ */
+function renderOverByOver(){
+  const inn1  = CSV_DATA.filter(r=>r.in===1);
+  const inn2  = CSV_DATA.filter(r=>r.in===2);
+  const team1 = inn1.length ? inn1[0].btt : "Inn 1";
+  const team2 = inn2.length ? inn2[0].btt : "Inn 2";
+
+  const maxOv = Math.max(
+    ...inn1.map(r=>parseInt(r.ov)),
+    ...inn2.map(r=>parseInt(r.ov)), 0
+  );
+
+  function ovData(rows,ov){
+    const or=rows.filter(r=>parseInt(r.ov)===ov);
+    if(!or.length) return null;
+    const runs =or.reduce((s,r)=>s+(parseInt(r.tr)||0),0);
+    const wkts =or.filter(r=>r.dk&&r.dk!=="").length;
+    const fours=or.filter(r=>parseInt(r.br)===4).length;
+    const sixes=or.filter(r=>parseInt(r.br)===6).length;
+    const dots =or.filter(r=>r.blt==="Runs"&&(parseInt(r.tr)||0)===0).length;
+    const balls=or.filter(r=>r.blt!=="Wide").length;
+    return {runs,wkts,fours,sixes,dots,balls};
+  }
+
+  const rows=[]; let c1=0,c2=0;
+  for(let o=0;o<=maxOv;o++){
+    const d1=ovData(inn1,o), d2=ovData(inn2,o);
+    if(d1) c1+=d1.runs; if(d2) c2+=d2.runs;
+    rows.push({ov:o+1,phase:getPhase(o),d1:d1?{...d1,cum:c1}:null,d2:d2?{...d2,cum:c2}:null});
+  }
+  const maxR=Math.max(...rows.map(r=>Math.max(r.d1?r.d1.runs:0,r.d2?r.d2.runs:0)),1);
+
+  function barCell(d,color){
+    if(!d) return `<td style="color:#374151;">—</td>`;
+    const pct=Math.round((d.runs/maxR)*100);
+    const wStr=d.wkts>0?`<span class="ov-wkt-lbl">${Array(d.wkts).fill("W").join(" ")}</span>`:"";
+    return `<td class="ov-bar-cell">
+      <div class="ov-bg-bar">
+        <div class="ov-bg-fill" style="width:${pct}%;background:${color};"></div>
+        <span class="ov-run-lbl">${d.runs}</span>
+        ${d.fours?"<span class='chip-4'>4×"+d.fours+"</span>":""}
+        ${d.sixes?"<span class='chip-6'>6×"+d.sixes+"</span>":""}
+        ${wStr}
+      </div>
+    </td>`;
+  }
+
+  const tBodyRows=rows.map(r=>{
+    const phCls=ovPhaseClass(r.phase);
+    return `<tr>
+      <td style="font-weight:900;font-size:13px;">${r.ov}</td>
+      <td><span class="${phCls}">${r.phase==="Powerplay"?"PP":r.phase==="Middle"?"Mid":"Death"}</span></td>
+      ${barCell(r.d1,"#22c55e")}
+      <td style="font-weight:800;color:#4ade80;">${r.d1?r.d1.cum:"—"}</td>
+      ${barCell(r.d2,"#2d8cff")}
+      <td style="font-weight:800;color:#60a5fa;">${r.d2?r.d2.cum:"—"}</td>
+      <td style="font-weight:700;color:${r.d1&&r.d2?(r.d1.runs>r.d2.runs?"#22c55e":"#ef4444"):"#a8b1d4"};">
+        ${r.d1&&r.d2?(r.d1.runs>r.d2.runs?"+":"")+(r.d1.runs-r.d2.runs):"—"}
+      </td>
+    </tr>`;
+  }).join("");
+
+  // Summary table
+  const tabRows=rows.filter(r=>r.d1||r.d2).map(r=>[
+    r.ov, r.phase,
+    r.d1?r.d1.runs:"—", r.d1?r.d1.wkts:"—", r.d1?r.d1.fours:"—", r.d1?r.d1.sixes:"—", r.d1?r.d1.dots:"—", r.d1?r.d1.cum:"—",
+    r.d2?r.d2.runs:"—", r.d2?r.d2.wkts:"—", r.d2?r.d2.fours:"—", r.d2?r.d2.sixes:"—", r.d2?r.d2.dots:"—", r.d2?r.d2.cum:"—"
+  ]);
+
+  document.getElementById("overbyover").innerHTML = `
+    <div class="card">
+      <div class="section-title">Over by Over — Visual Comparison</div>
+      <div class="section-sub">
+        <span style="color:#4ade80;font-weight:800;">&#9632;</span> ${esc(team1)} &nbsp;|&nbsp;
+        <span style="color:#60a5fa;font-weight:800;">&#9632;</span> ${esc(team2)} &nbsp;|&nbsp;
+        Diff = Inn1 runs − Inn2 runs per over &nbsp;|&nbsp; Cum = Cumulative score
+      </div>
+      <div class="table-wrap" style="margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Over</th><th>Phase</th>
+              <th>${esc(team1)} Runs</th><th>${esc(team1)} Cum</th>
+              <th>${esc(team2)} Runs</th><th>${esc(team2)} Cum</th>
+              <th>Diff</th>
+            </tr>
+          </thead>
+          <tbody>${tBodyRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Over by Over — Full Stats Table</div>
+      ${table(
+        ["Ov","Phase","Inn1 R","Inn1 W","Inn1 4s","Inn1 6s","Inn1 Dots","Inn1 Cum","Inn2 R","Inn2 W","Inn2 4s","Inn2 6s","Inn2 Dots","Inn2 Cum"],
+        tabRows,
+        [null,null,{type:"higher",good:12,bad:5},null,null,null,{type:"lower",good:1,bad:4},null,{type:"higher",good:12,bad:5},null,null,null,{type:"lower",good:1,bad:4},null]
+      )}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 4 — BOUNDARIES MAP (4s & 6s, Phase Wise)
+══════════════════════════════════════════════════════ */
+function renderBoundariesMap(){
+  const inn1  = CSV_DATA.filter(r=>r.in===1);
+  const inn2  = CSV_DATA.filter(r=>r.in===2);
+  const team1 = inn1.length ? inn1[0].btt : "Inn 1";
+  const team2 = inn2.length ? inn2[0].btt : "Inn 2";
+  const phases= ["Powerplay","Middle","Death"];
+
+  function bndPhaseBlock(rows, ph, label){
+    const pr  = ph==="ALL" ? rows : rows.filter(r=>getPhase(parseInt(r.ov))===ph);
+    const f4  = pr.filter(r=>parseInt(r.br)===4);
+    const f6  = pr.filter(r=>parseInt(r.br)===6);
+
+    function shotBreak(balls, type){
+      const m={};
+      balls.forEach(r=>{ m[r.sn]=(m[r.sn]||0)+1; });
+      return Object.entries(m).sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>`<span class="${type==="4"?"chip-4":"chip-6"}">${esc(k)} ×${v}</span>`).join("");
+    }
+    function dlvBreak(balls, type){
+      const m={};
+      balls.forEach(r=>{ m[r.dn]=(m[r.dn]||0)+1; });
+      return Object.entries(m).sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>`<span class="${type==="4"?"chip-4":"chip-6"}">${esc(k)} ×${v}</span>`).join("");
+    }
+    function footBreak(balls, type){
+      const m={};
+      balls.forEach(r=>{ m[r.fn]=(m[r.fn]||0)+1; });
+      return Object.entries(m).sort((a,b)=>b[1]-a[1])
+        .map(([k,v])=>`<span class="chip-dot">${esc(k)} ×${v}</span>`).join("");
+    }
+
+    const phClass = ph==="Powerplay"?phPillClass("Powerplay"):ph==="Middle"?phPillClass("Middle"):ph==="Death"?phPillClass("Death"):"";
+
+    return `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div class="section-title" style="margin:0;">${esc(label)}</div>
+          ${ph!=="ALL"?`<span class="${phClass}">${ph}</span>`:""}
+        </div>
+        <div class="bnd-shot-grid">
+          <div>
+            <h4 style="color:#60a5fa;">&#9632; Fours (${f4.length})</h4>
+            <div style="margin-top:8px;"><strong style="font-size:11px;color:#a8b1d4;text-transform:uppercase;letter-spacing:.08em;">Shot Types</strong><br/><div style="margin-top:4px;">${shotBreak(f4,"4")||"<span class='chip-dot'>None</span>"}</div></div>
+            <div style="margin-top:8px;"><strong style="font-size:11px;color:#a8b1d4;text-transform:uppercase;letter-spacing:.08em;">Delivery Types</strong><br/><div style="margin-top:4px;">${dlvBreak(f4,"4")||"<span class='chip-dot'>None</span>"}</div></div>
+            <div style="margin-top:8px;"><strong style="font-size:11px;color:#a8b1d4;text-transform:uppercase;letter-spacing:.08em;">Foot Position</strong><br/><div style="margin-top:4px;">${footBreak(f4,"4")||"<span class='chip-dot'>None</span>"}</div></div>
+          </div>
+          <div>
+            <h4 style="color:#c4b5fd;">&#9632; Sixes (${f6.length})</h4>
+            <div style="margin-top:8px;"><strong style="font-size:11px;color:#a8b1d4;text-transform:uppercase;letter-spacing:.08em;">Shot Types</strong><br/><div style="margin-top:4px;">${shotBreak(f6,"6")||"<span class='chip-dot'>None</span>"}</div></div>
+            <div style="margin-top:8px;"><strong style="font-size:11px;color:#a8b1d4;text-transform:uppercase;letter-spacing:.08em;">Delivery Types</strong><br/><div style="margin-top:4px;">${dlvBreak(f6,"6")||"<span class='chip-dot'>None</span>"}</div></div>
+            <div style="margin-top:8px;"><strong style="font-size:11px;color:#a8b1d4;text-transform:uppercase;letter-spacing:.08em;">Foot Position</strong><br/><div style="margin-top:4px;">${footBreak(f6,"6")||"<span class='chip-dot'>None</span>"}</div></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <h4 style="margin-bottom:8px;">Boundary Table</h4>
+          ${table(
+            ["Batter","4s","6s","Total Bnds","Bnds/Phase"],
+            [...new Set([...f4,...f6].map(r=>r.bat.trim()))].map(b=>{
+              const b4=[...f4,...f6].filter(r=>r.bat.trim()===b&&parseInt(r.br)===4).length;
+              const b6=[...f4,...f6].filter(r=>r.bat.trim()===b&&parseInt(r.br)===6).length;
+              return [b,b4,b6,b4+b6,(b4+b6).toFixed(0)];
+            }).sort((a,b)=>b[3]-a[3]),
+            [null,null,null,{type:"higher",good:4,bad:1},null]
+          )}
+        </div>
+      </div>`;
+  }
+
+  document.getElementById("bndsmap").innerHTML = `
+    <div class="card">
+      <div class="section-title">Boundaries Map — Phase Wise (4s &amp; 6s)</div>
+      <div class="section-sub">Shot types, delivery types and foot positions for every four and six, broken down by innings and phase.</div>
+    </div>
+    <div style="font-size:15px;font-weight:800;color:#22c55e;margin:4px 0 8px;">&#9654; ${esc(team1)} — Innings 1</div>
+    ${bndPhaseBlock(inn1,"ALL","All Phases")}
+    ${phases.map(ph=>bndPhaseBlock(inn1,ph,ph)).join("")}
+    <div style="font-size:15px;font-weight:800;color:#2d8cff;margin:16px 0 8px;">&#9654; ${esc(team2)} — Innings 2</div>
+    ${bndPhaseBlock(inn2,"ALL","All Phases")}
+    ${phases.map(ph=>bndPhaseBlock(inn2,ph,ph)).join("")}`;
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 5 — DOT BALL SEQUENCE ANALYSIS
+══════════════════════════════════════════════════════ */
+function renderDotSequences(){
+  const inn1  = CSV_DATA.filter(r=>r.in===1);
+  const inn2  = CSV_DATA.filter(r=>r.in===2);
+  const team1 = inn1.length ? inn1[0].btt : "Inn 1";
+  const team2 = inn2.length ? inn2[0].btt : "Inn 2";
+
+  // Sort balls: by over then ball number
+  function sortBalls(rows){
+    return [...rows].sort((a,b)=>(parseInt(a.ov)-parseInt(b.ov))||
+      (parseInt(a.bl)-parseInt(b.bl)));
+  }
+
+  // Build ball-by-ball display string
+  function ballClass(r){
+    if(r.blt==="Wide") return "sb-wide";
+    if(r.dk&&r.dk!=="") return "sb-w";
+    const br=parseInt(r.br)||0;
+    if(br===0) return "sb-dot";
+    if(br===1) return "sb-1";
+    if(br===2) return "sb-2";
+    if(br===3) return "sb-3";
+    if(br===4) return "sb-4";
+    return "sb-6";
+  }
+  function ballLabel(r){
+    if(r.blt==="Wide") return "Wd";
+    if(r.dk&&r.dk!=="") return "W";
+    const br=parseInt(r.br)||0;
+    return br===0?"·":String(br);
+  }
+
+  // Find consecutive dot sequences
+  function findDotSeqs(rows){
+    const sorted=sortBalls(rows).filter(r=>r.blt!=="Wide"&&r.blt!=="NoBallRuns");
+    const seqs=[]; let cur=[];
+    sorted.forEach((r,i)=>{
+      const isDot=(parseInt(r.tr)||0)===0;
+      if(isDot){ cur.push(r); }
+      else {
+        if(cur.length>=2) seqs.push({balls:[...cur], breakBall:r, len:cur.length});
+        cur=[];
+      }
+    });
+    if(cur.length>=2) seqs.push({balls:[...cur],breakBall:null,len:cur.length});
+    return seqs;
+  }
+
+  // Count sequences by length
+  function seqCounts(seqs){
+    const c={2:0,3:0,4:0,5:0};
+    seqs.forEach(s=>{
+      if(s.len>=5) c[5]++;
+      else if(s.len===4) c[4]++;
+      else if(s.len===3) c[3]++;
+      else c[2]++;
+    });
+    return c;
+  }
+
+  // Bowler who created most sequences
+  function topSeqBowler(seqs){
+    const m={};
+    seqs.forEach(s=>s.balls.forEach(b=>{ m[b.bwl.trim()]=(m[b.bwl.trim()]||0)+1; }));
+    return Object.entries(m).sort((a,b)=>b[1]-a[1])[0];
+  }
+
+  function renderInnSeqs(rows, team, num){
+    const sorted=sortBalls(rows);
+    const seqs=findDotSeqs(rows);
+    const counts=seqCounts(seqs);
+    const topBwl=topSeqBowler(seqs);
+
+    // Group balls by over for display
+    const overMap={};
+    sorted.forEach(r=>{ const o=parseInt(r.ov); if(!overMap[o]) overMap[o]=[]; overMap[o].push(r); });
+
+    // Mark which balls are in a dot sequence
+    const seqBallSet=new Set();
+    seqs.forEach(s=>s.balls.forEach(b=>seqBallSet.add(`${b.ov}-${b.bl}`)));
+
+    const ovHtml=Object.entries(overMap).map(([ov,balls])=>{
+      const phase=getPhase(parseInt(ov));
+      const ovRuns=balls.reduce((s,r)=>s+(parseInt(r.tr)||0),0);
+      const ballsHtml=balls.map(r=>{
+        const inSeq=seqBallSet.has(`${r.ov}-${r.bl}`);
+        const cls=ballClass(r);
+        const lbl=ballLabel(r);
+        const highlight=inSeq&&cls==="sb-dot"?`outline:2px solid #ef4444;`:"";
+        return `<span class="seq-ball ${cls}" style="${highlight}" title="${esc(r.sn||"")} off ${esc(r.bwl||"")} (${esc(r.cn||"")})">${lbl}</span>`;
+      }).join("");
+      const wkts=balls.filter(r=>r.dk&&r.dk!=="").length;
+      return `<div class="seq-block">
+        <div class="seq-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="seq-title">Over ${parseInt(ov)+1}</span>
+            <span class="${phPillClass(phase)}">${phase}</span>
+            ${wkts?`<span class="seq-streak">${wkts}W</span>`:""}
+          </div>
+          <div style="font-size:12px;color:#a8b1d4;font-weight:700;">${ovRuns} runs</div>
+        </div>
+        <div>${ballsHtml}</div>
+        <div style="font-size:10px;color:#475569;margin-top:6px;">Bowler: ${esc(balls[0]?balls[0].bwl:"")}</div>
+      </div>`;
+    }).join("");
+
+    // Sequence detail table
+    const seqTableRows=seqs.map((s,i)=>[
+      i+1, s.len,
+      `Ov ${parseInt(s.balls[0].ov)+1} Bl ${s.balls[0].bl}`,
+      `Ov ${parseInt(s.balls[s.balls.length-1].ov)+1} Bl ${s.balls[s.balls.length-1].bl}`,
+      s.balls[0].bwl.trim(),
+      s.balls[0].bat.trim(),
+      s.breakBall ? (parseInt(s.breakBall.br)||0) : "end"
+    ]);
+
+    return `
+      <div class="card">
+        <div class="section-title">Inn ${num}: ${esc(team)} — Dot Sequence Summary</div>
+        <div class="seq-summary-grid">
+          <div class="seq-kpi"><div class="sq-label">2-Dot Sequences</div><div class="sq-val sq-2">${counts[2]}</div></div>
+          <div class="seq-kpi"><div class="sq-label">3-Dot Sequences</div><div class="sq-val sq-3">${counts[3]}</div></div>
+          <div class="seq-kpi"><div class="sq-label">4-Dot Sequences</div><div class="sq-val sq-4">${counts[4]}</div></div>
+          <div class="seq-kpi"><div class="sq-label">5+ Dot Sequences</div><div class="sq-val sq-5">${counts[5]}</div></div>
+        </div>
+        ${topBwl?`<div style="background:#0a1027;border:1px solid #1f2854;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13px;">
+          <span style="color:#a8b1d4;font-weight:700;">Most dot sequence balls:</span>
+          <span style="font-weight:900;color:#facc15;margin-left:8px;">${esc(topBwl[0])}</span>
+          <span style="color:#a8b1d4;margin-left:6px;">(${topBwl[1]} dot balls in sequences)</span>
+        </div>`:""}
+        ${seqTableRows.length?table(
+          ["#","Length","Start","End","Bowler","Batter","Broken By"],
+          seqTableRows,
+          [null,{type:"lower",good:2,bad:5},null,null,null,null,null]
+        ):`<div class="small-note">No sequences of 2+ consecutive dots found.</div>`}
+      </div>
+      <div class="card">
+        <div class="section-title">Inn ${num}: ${esc(team)} — Ball by Ball (dots outlined in red)</div>
+        <div class="small-note" style="margin-bottom:10px;">
+          <span class="seq-ball sb-dot" style="display:inline-flex;">·</span> Dot &nbsp;
+          <span class="seq-ball sb-1"  style="display:inline-flex;">1</span> Single &nbsp;
+          <span class="seq-ball sb-4"  style="display:inline-flex;">4</span> Four &nbsp;
+          <span class="seq-ball sb-6"  style="display:inline-flex;">6</span> Six &nbsp;
+          <span class="seq-ball sb-w"  style="display:inline-flex;">W</span> Wicket &nbsp;
+          <span class="seq-ball sb-wide" style="display:inline-flex;">Wd</span> Wide &nbsp;
+          <span style="font-size:11px;color:#ef4444;font-weight:700;">Red outline = part of 2+ dot sequence</span>
+        </div>
+        ${ovHtml}
+      </div>`;
+  }
+
+  document.getElementById("dotseq").innerHTML = `
+    <div class="card">
+      <div class="section-title">Dot Ball Sequence Analysis</div>
+      <div class="section-sub">Identifies runs of 2, 3, 4 and 5+ consecutive dot balls per innings. Useful for identifying bowling pressure periods and batting struggles.</div>
+    </div>
+    ${renderInnSeqs(inn1,team1,1)}
+    ${renderInnSeqs(inn2,team2,2)}`;
+}
+
+/* ══════════════════════════════════════════════════════
+   CALL ALL NEW RENDERERS
+══════════════════════════════════════════════════════ */
+function renderAllNewTabs(){
+  renderPhaseStats();
+  renderBothStats();
+  renderOverByOver();
+  renderBoundariesMap();
+  renderDotSequences();
+}
+
 fillFilters();
 renderSelected();
 renderPlayerCardTab();
 </script>
 </body>
 </html>
+
 
