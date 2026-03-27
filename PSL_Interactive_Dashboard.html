@@ -1,0 +1,1151 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talking Bat — PSL Interactive Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Segoe UI',Inter,sans-serif}
+body{background:#080c24;color:#e2e8f0;min-height:100vh}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#0f1535 0%,#1a2052 100%);border-bottom:2px solid #1e2a5e;padding:10px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.5)}
+.hdr-brand{font-size:18px;font-weight:900;color:#fff;letter-spacing:1.5px;white-space:nowrap}
+.hdr-brand span{color:#22d3ee}.hdr-sep{flex:1}
+.hdr-ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hdr-ctrl select,.hdr-ctrl input{background:#1e2657;border:1px solid #3d4f8c;color:#e2e8f0;padding:7px 12px;border-radius:7px;font-size:13px;cursor:pointer;min-width:200px}
+.hdr-ctrl select:focus,.hdr-ctrl input:focus{outline:none;border-color:#22d3ee}
+.btn{padding:7px 16px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-cyan{background:#0891b2;color:#fff}.btn-cyan:hover{background:#06b6d4}
+.btn-green{background:#059669;color:#fff}.btn-green:hover{background:#10b981}
+.btn-purple{background:#7c3aed;color:#fff}.btn-purple:hover{background:#8b5cf6}
+.btn-red{background:#dc2626;color:#fff}.btn-red:hover{background:#ef4444}
+.btn-sm{padding:5px 12px;font-size:12px}
+.mode-tabs{display:flex;gap:3px}
+.mode-btn{padding:6px 14px;border:1px solid #3d4f8c;border-radius:20px;background:transparent;color:#94a3b8;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.mode-btn.active{background:#1d4ed8;border-color:#3b82f6;color:#fff}
+
+/* NOTIFY */
+.notify{position:fixed;bottom:24px;right:24px;background:#059669;color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;font-size:13px;z-index:9999;transform:translateY(100px);opacity:0;transition:all .4s;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.notify.show{transform:translateY(0);opacity:1}
+
+/* PAGE */
+.page{max-width:1700px;margin:0 auto;padding:16px}
+
+/* PLAYER CARD TOP */
+.pc{display:grid;grid-template-columns:230px 1fr 280px 220px;gap:0;border-radius:14px;overflow:hidden;border:1px solid #1e2a5e;margin-bottom:0;box-shadow:0 4px 30px rgba(0,0,0,.4)}
+
+/* LEFT COL */
+.pc-left{background:#0f1535;padding:16px;display:flex;flex-direction:column;gap:12px;border-right:1px solid #1e2a5e}
+.pc-photo{width:100%;aspect-ratio:1;border-radius:10px;background:linear-gradient(135deg,#1e2657,#0d1130);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;border:2px solid #2d3a6e}
+.pc-initials{font-size:42px;font-weight:900;color:#3b82f6;letter-spacing:-2px}
+.pc-name{font-size:15px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.5px;line-height:1.2}
+.pc-bat-style{font-size:11px;color:#94a3b8;font-weight:600;margin-top:2px}
+.sec-title{font-size:9px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.donut-wrap{display:flex;justify-content:center;align-items:center}
+
+/* Matchup blocks */
+.mu-block{background:#1a2147;border-radius:8px;padding:9px;border:1px solid #2d3a6e;margin-bottom:5px}
+.mu-title{font-size:9px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.mu-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.mu-stat{text-align:center}
+.mu-val{font-size:13px;font-weight:900;color:#fff;line-height:1}
+.mu-lbl{font-size:8px;color:#64748b;font-weight:600}
+
+/* MID COL */
+.pc-mid{background:#09102b;padding:0;display:flex;flex-direction:column;border-right:1px solid #1e2a5e}
+.pc-col-hdr{background:#111a42;padding:10px 16px;font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1e2a5e}
+.pc-mid-body{flex:1;padding:14px;display:flex;flex-direction:column;gap:10px}
+.pc-block{background:#111535;border-radius:8px;padding:12px;border:1px solid #1a2147}
+.pc-block-title{font-size:9px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.pc-bullet{font-size:12px;color:#e2e8f0;padding:3px 0 3px 12px;position:relative}
+.pc-bullet::before{content:'•';position:absolute;left:0;color:#22d3ee}
+.plan-link{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a2147;text-decoration:none}
+.plan-link:last-child{border-bottom:none}
+.yt-icon{width:22px;height:15px;background:#dc2626;border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.yt-icon svg{width:10px;height:10px;fill:#fff}
+.plan-txt{font-size:12px;color:#bfdbfe;text-decoration:underline;cursor:pointer;flex:1}
+.plan-txt:hover{color:#60a5fa}
+.plan-del{cursor:pointer;color:#475569;font-size:13px}.plan-del:hover{color:#f87171}
+.add-lnk{font-size:11px;color:#22d3ee;cursor:pointer;text-decoration:underline;margin-top:5px;display:inline-block}
+
+/* DISMISSALS COL */
+.pc-dis{background:#09102b;display:flex;flex-direction:column;border-right:1px solid #1e2a5e;overflow:hidden}
+.pc-col-body{flex:1;padding:10px;display:flex;align-items:center;justify-content:center}
+
+/* PITCH COL */
+.pc-pitch{background:#09102b;display:flex;flex-direction:column;overflow:hidden}
+
+/* KPI ROW */
+.pc-bottom{display:grid;grid-template-columns:230px 1fr 1fr;gap:0;border-radius:0 0 14px 14px;overflow:hidden;border:1px solid #1e2a5e;border-top:none;margin-bottom:16px;box-shadow:0 4px 30px rgba(0,0,0,.4)}
+.kpi-grid{background:#090e28;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-right:1px solid #1e2a5e}
+.kpi{background:#111535;border-radius:8px;padding:12px 8px;text-align:center;border:1px solid #1a2147}
+.kpi-val{font-size:22px;font-weight:900;color:#22d3ee;line-height:1}
+.kpi-lbl{font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;margin-top:2px}
+.wagon-col{background:#090e28;display:flex;flex-direction:column;border-right:1px solid #1e2a5e}
+.wagon-body{flex:1;display:flex;align-items:center;justify-content:center;padding:8px}
+.sgrid-col{background:#090e28;display:flex;flex-direction:column}
+.sgrid-body{flex:1;padding:12px}
+
+/* TABS */
+.tabs-wrap{background:#0f1535;border-radius:14px;border:1px solid #1e2a5e;overflow:hidden;box-shadow:0 4px 30px rgba(0,0,0,.3)}
+.tab-bar{display:flex;background:#090e28;border-bottom:1px solid #1e2a5e;overflow-x:auto;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{padding:12px 18px;font-size:12px;font-weight:700;color:#64748b;border:none;background:transparent;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s}
+.tab-btn.active{color:#22d3ee;border-bottom-color:#22d3ee;background:#0f1535}
+.tab-btn:hover:not(.active){color:#94a3b8}
+.tab-pane{padding:18px;display:none}.tab-pane.active{display:block}
+
+/* SCORECARD */
+.sc-table{width:100%;border-collapse:collapse;font-size:13px}
+.sc-table th{background:#111535;color:#64748b;padding:8px 10px;text-align:left;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1e2a5e}
+.sc-table td{padding:8px 10px;border-bottom:1px solid #111535;color:#e2e8f0;vertical-align:middle}
+.sc-table tr:hover td{background:#0d1130}
+.out{color:#f87171}.notout{color:#4ade80}
+.sc-table .total-row td{background:#1a2147;font-weight:900;color:#fff;border:none}
+.ph-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700}
+.ph-pp{background:#0369a1;color:#e0f2fe}.ph-mo{background:#92400e;color:#fef3c7}.ph-dp{background:#065f46;color:#d1fae5}
+
+/* PHASE GRID */
+.ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.ph-card{background:#111535;border-radius:10px;padding:14px;border:1px solid #1e2a5e}
+.ph-card-title{font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.ph-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #0d1130}
+.ph-row:last-child{border-bottom:none}
+.ph-row-lbl{font-size:12px;color:#64748b}.ph-row-val{font-size:13px;font-weight:800;color:#e2e8f0}
+
+/* OVO */
+.ovo-row{display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:nowrap}
+.ovo-label{font-size:11px;font-weight:700;width:36px;text-align:right;flex-shrink:0}
+.ovo-balls{display:flex;gap:2px;align-items:center;flex-wrap:nowrap}
+.ball{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0;cursor:default}
+.b0{background:#1e293b;border:1px solid #334155}.b1{background:#1d4ed8}.b2{background:#0369a1}
+.b3{background:#0891b2}.b4{background:#15803d;font-size:10px}.b6{background:#b45309;font-size:10px}
+.bW{background:#6d28d9}.bX{background:#7f1d1d;font-size:8px}
+.ovo-meta{font-size:11px;color:#64748b;margin-left:6px;white-space:nowrap}
+.ovo-cum{font-size:11px;color:#475569;margin-left:auto;white-space:nowrap}
+
+/* DOT SEQ */
+.ds-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #111535}
+.ds-row:last-child{border-bottom:none}
+.ds-lbl{font-size:13px;color:#94a3b8;min-width:150px}
+.ds-val{font-size:20px;font-weight:900;color:#22d3ee;min-width:36px;text-align:right}
+.ds-bar{flex:1;height:7px;background:#111535;border-radius:4px;overflow:hidden}
+.ds-fill{height:100%;background:linear-gradient(90deg,#2563eb,#22d3ee);border-radius:4px;transition:width .4s}
+
+/* BAR ROW */
+.br-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.br-label{min-width:130px;font-size:12px;color:#94a3b8}
+.br-bar{flex:1;height:8px;background:#111535;border-radius:4px;overflow:hidden}
+.br-fill{height:100%;border-radius:4px;transition:width .4s}
+.br-val{min-width:28px;font-size:12px;font-weight:800;color:#e2e8f0;text-align:right}
+
+/* COMPARISON */
+.cmp-grid{display:grid;grid-template-columns:1fr 130px 1fr;gap:0;align-items:stretch}
+.cmp-left{text-align:right;padding:8px 12px;border-right:1px solid #1e2a5e;display:flex;flex-direction:column;gap:2px}
+.cmp-mid{padding:8px;display:flex;flex-direction:column;justify-content:space-around;background:#0a0f28}
+.cmp-right{padding:8px 12px;border-left:1px solid #1e2a5e;display:flex;flex-direction:column;gap:2px}
+.cmp-stat{display:flex;gap:8px;align-items:center;padding:3px 0}
+.cmp-stat-v{font-size:14px;font-weight:800}
+.cmp-stat-l{font-size:11px;color:#64748b}
+.cmp-mid-lbl{font-size:10px;color:#475569;font-weight:700;text-align:center;padding:4px 0;border-bottom:1px solid #111535}
+
+/* MODALS */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-ov.open{display:flex}
+.modal{background:#0f1535;border:1px solid #1e2a5e;border-radius:16px;padding:24px;width:100%;max-width:920px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.modal-title{font-size:18px;font-weight:900;color:#fff;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{cursor:pointer;color:#475569;font-size:22px;line-height:1;transition:.2s}.modal-close:hover{color:#e2e8f0}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select,.fg textarea{background:#1a2147;border:1px solid #2d3a6e;color:#e2e8f0;padding:8px 10px;border-radius:7px;font-size:13px;transition:.15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#22d3ee;background:#1e2657}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:14px;border-top:1px solid #1e2a5e}
+.rec-table{width:100%;border-collapse:collapse;font-size:12px}
+.rec-table th{background:#090e28;color:#475569;padding:6px 8px;text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;border-bottom:1px solid #1e2a5e}
+.rec-table td{padding:6px 8px;border-bottom:1px solid #111535;vertical-align:middle}
+.rec-table tr:hover td{background:#0d1130}
+.del-btn{cursor:pointer;color:#f87171;background:none;border:none;font-size:15px;padding:0 4px}.del-btn:hover{color:#fca5a5}
+
+/* RESPONSIVE */
+@media(max-width:1300px){.pc{grid-template-columns:220px 1fr 260px}.pc-pitch{display:none}.pc-bottom{grid-template-columns:220px 1fr 1fr}}
+@media(max-width:1000px){.pc{grid-template-columns:200px 1fr}.pc-dis{display:none}.pc-bottom{grid-template-columns:200px 1fr}}
+@media(max-width:700px){.pc{grid-template-columns:1fr}.pc-bottom{grid-template-columns:1fr 1fr}.ph-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.pc-bottom{grid-template-columns:1fr}.ph-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="hdr">
+  <div class="hdr-brand">TALKING <span>BAT</span> ANALYTICS</div>
+  <div style="font-size:11px;color:#3d4f8c;font-weight:700">PSL INTERACTIVE DASHBOARD</div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-ctrl">
+    <select id="playerSelect" onchange="onPlayerChange()">
+      <option value="">— Select Batter —</option>
+    </select>
+    <div class="mode-tabs">
+      <button class="mode-btn active" onclick="setMode('ALL',this)">ALL</button>
+      <button class="mode-btn" onclick="setMode('PACE',this)">vs PACE</button>
+      <button class="mode-btn" onclick="setMode('SPIN',this)">vs SPIN</button>
+    </div>
+    <button class="btn btn-green btn-sm" onclick="openModal('addDataModal')">&#43; Add Match Data</button>
+    <button class="btn btn-purple btn-sm" onclick="openModal('addLinkModal')">&#43; Add Link</button>
+    <button class="btn btn-red btn-sm" onclick="clearAllData()" title="Clear added data">&#128465;</button>
+  </div>
+</header>
+
+<div class="notify" id="notify"></div>
+
+<div class="page">
+<!-- ===== PLAYER CARD ===== -->
+<div class="pc" id="playerCard">
+
+  <!-- LEFT: Photo + Tendencies + Matchups -->
+  <div class="pc-left">
+    <div class="pc-photo"><span class="pc-initials" id="pcInitials">TB</span></div>
+    <div>
+      <div class="pc-name" id="pcName">Select a Batter</div>
+      <div class="pc-bat-style" id="pcStyle">Choose a player to view analytics</div>
+    </div>
+    <div>
+      <div class="sec-title">Batting Tendencies</div>
+      <div class="donut-wrap" id="donutWrap"></div>
+    </div>
+    <div>
+      <div class="sec-title">Matchups by Bowling Action</div>
+      <div id="matchupsWrap"></div>
+    </div>
+  </div>
+
+  <!-- MID: Strength + Unorthodox + Plan -->
+  <div class="pc-mid">
+    <div class="pc-col-hdr" id="pcModeHdr">Against All Bowling</div>
+    <div class="pc-mid-body">
+      <div class="pc-block">
+        <div class="pc-block-title">Strength — Top Shot Types</div>
+        <div id="strengthWrap"><div style="color:#475569;font-size:12px">Select a player</div></div>
+      </div>
+      <div class="pc-block">
+        <div class="pc-block-title">Un-Orthodox Shots</div>
+        <div id="unorthodoxWrap"><div style="color:#475569;font-size:12px">—</div></div>
+      </div>
+      <div class="pc-block">
+        <div class="pc-block-title">Plan</div>
+        <div id="planWrap"></div>
+        <span class="add-lnk" onclick="openModal('addLinkModal')">&#43; Add coaching plan link</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISMISSALS LINE -->
+  <div class="pc-dis">
+    <div class="pc-col-hdr">Dismissals Line</div>
+    <div class="pc-col-body" id="dismissalsWrap"></div>
+  </div>
+
+  <!-- PITCH MAP -->
+  <div class="pc-pitch">
+    <div class="pc-col-hdr">Pitch Map</div>
+    <div class="pc-col-body" id="pitchMapWrap"></div>
+  </div>
+</div>
+
+<!-- KPI + WAGON + SR GRID ROW -->
+<div class="pc-bottom">
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-val" id="kpi-r">—</div><div class="kpi-lbl">Runs</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpi-sr">—</div><div class="kpi-lbl">Strike Rate</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpi-avg">—</div><div class="kpi-lbl">Average</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpi-4s">—</div><div class="kpi-lbl">Fours</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpi-6s">—</div><div class="kpi-lbl">Sixes</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpi-dot">—</div><div class="kpi-lbl">Dot %</div></div>
+  </div>
+  <div class="wagon-col">
+    <div class="pc-col-hdr">Wagon Zone</div>
+    <div class="wagon-body" id="wagonWrap"></div>
+  </div>
+  <div class="sgrid-col">
+    <div class="pc-col-hdr">Strike Rate Grid (Length × Line)</div>
+    <div class="sgrid-body" id="srGridWrap"></div>
+  </div>
+</div>
+
+<!-- ===== ANALYSIS TABS ===== -->
+<div class="tabs-wrap">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('scorecard',this)">&#9654; Scorecard</button>
+    <button class="tab-btn" onclick="switchTab('phasestats',this)">Phase Stats</button>
+    <button class="tab-btn" onclick="switchTab('phasecomp',this)">Phase Comparison</button>
+    <button class="tab-btn" onclick="switchTab('bothstats',this)">Both Inn Stats</button>
+    <button class="tab-btn" onclick="switchTab('overbyover',this)">Over by Over</button>
+    <button class="tab-btn" onclick="switchTab('boundaries',this)">Boundaries Map</button>
+    <button class="tab-btn" onclick="switchTab('dotseq',this)">Dot Sequences</button>
+  </div>
+  <div class="tab-pane active" id="tab-scorecard"></div>
+  <div class="tab-pane" id="tab-phasestats"></div>
+  <div class="tab-pane" id="tab-phasecomp"></div>
+  <div class="tab-pane" id="tab-bothstats"></div>
+  <div class="tab-pane" id="tab-overbyover"></div>
+  <div class="tab-pane" id="tab-boundaries"></div>
+  <div class="tab-pane" id="tab-dotseq"></div>
+</div>
+</div><!-- /page -->
+
+<!-- ===== ADD MATCH DATA MODAL ===== -->
+<div class="modal-ov" id="addDataModal">
+  <div class="modal">
+    <div class="modal-title">
+      &#43; Add New Match Day Data
+      <span class="modal-close" onclick="closeModal('addDataModal')">&#10005;</span>
+    </div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:14px">Enter ball-by-ball data below. After adding all balls, click <strong style="color:#22d3ee">Save &amp; Update Dashboard</strong>.</div>
+    <div class="form-grid">
+      <div class="fg"><label>Innings</label><select id="f-in"><option value="1">1st Innings</option><option value="2">2nd Innings</option></select></div>
+      <div class="fg"><label>Over # (0-based)</label><input type="number" id="f-ov" min="0" max="19" value="0"></div>
+      <div class="fg"><label>Ball # (1-6+)</label><input type="number" id="f-bl" min="1" max="8" value="1"></div>
+      <div class="fg"><label>Batsman</label><input type="text" id="f-bat" list="dl-bats" placeholder="Player name"></div>
+      <div class="fg"><label>Bat Style</label><select id="f-bs"><option value="RHB">Right Hand Bat</option><option value="LHB">Left Hand Bat</option></select></div>
+      <div class="fg"><label>Bowler</label><input type="text" id="f-bwl" list="dl-bwls" placeholder="Bowler name"></div>
+      <div class="fg"><label>Bowling Action</label><select id="f-ba"><option value="RAMF">RAMF (Right Arm Medium Fast)</option><option value="LAMF">LAMF (Left Arm Medium Fast)</option><option value="OFF BREAK">OFF BREAK</option><option value="LEG BREAK">LEG BREAK</option><option value="SLA">SLA (Slow Left Arm)</option></select></div>
+      <div class="fg"><label>Bowling Type</label><select id="f-bt"><option value="PACE">PACE</option><option value="SPIN">SPIN</option></select></div>
+      <div class="fg"><label>Batsman Runs</label><input type="number" id="f-br" min="0" max="6" value="0"></div>
+      <div class="fg"><label>Ball Type</label><select id="f-blt"><option value="Runs">Runs (legal)</option><option value="Wide">Wide</option><option value="No Ball">No Ball</option></select></div>
+      <div class="fg"><label>Dismissal Kind</label><input type="text" id="f-dk" placeholder="caught / bowled / lbw ..."></div>
+      <div class="fg"><label>Player Dismissed</label><input type="text" id="f-pd" list="dl-bats" placeholder="Name if wicket fell"></div>
+      <div class="fg"><label>Shot Name</label><input type="text" id="f-sn" list="dl-shots" placeholder="Drive / Pull / Cut ..."></div>
+      <div class="fg"><label>Delivery Name</label><input type="text" id="f-dn" list="dl-dels" placeholder="Good Length / Yorker ..."></div>
+      <div class="fg"><label>Feet Position</label><select id="f-fn"><option value="Front Foot">Front Foot</option><option value="Back Foot">Back Foot</option><option value="No Movement">No Movement</option></select></div>
+      <div class="fg"><label>Connection</label><input type="text" id="f-cn" placeholder="Middled / Edge / Missed"></div>
+      <div class="fg"><label>Total Runs (ball)</label><input type="number" id="f-tr" min="0" max="7" value="0"></div>
+      <div class="fg"><label>Batting Team</label><input type="text" id="f-btt" list="dl-teams" placeholder="Team name"></div>
+      <div class="fg"><label>Bowling Team</label><input type="text" id="f-bwt" list="dl-teams" placeholder="Team name"></div>
+    </div>
+    <div class="form-actions" style="border-top:none;padding-top:0;justify-content:flex-start">
+      <button class="btn btn-cyan" onclick="addBallRow()">&#43; Add Ball to Queue</button>
+    </div>
+    <div style="margin-top:20px;border-top:1px solid #1e2a5e;padding-top:16px">
+      <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px">Queued Balls (<span id="pendingCount">0</span>)</div>
+      <div style="overflow-x:auto;max-height:220px;overflow-y:auto">
+        <table class="rec-table" id="pendingTable">
+          <thead><tr><th>Inn</th><th>Ov.Bl</th><th>Bat</th><th>Bwl</th><th>Runs</th><th>Type</th><th>Shot</th><th>Delivery</th><th>Dismissal</th><th></th></tr></thead>
+          <tbody id="pendingBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-green" onclick="saveAndUpdate()">&#10003; Save &amp; Update Dashboard</button>
+      <button class="btn btn-red btn-sm" onclick="clearPending()">Clear Queue</button>
+    </div>
+    <datalist id="dl-bats"></datalist>
+    <datalist id="dl-bwls"></datalist>
+    <datalist id="dl-shots">
+      <option value="Drive"><option value="Off Drive"><option value="On Drive"><option value="Cover Drive"><option value="Straight Drive">
+      <option value="Pull"><option value="Hook"><option value="Cut"><option value="Flick"><option value="Glance">
+      <option value="Sweep"><option value="Reverse Sweep"><option value="Slog"><option value="Push Shot">
+      <option value="Scoop"><option value="Ramp"><option value="Down The Tracks"><option value="Upper Cut">
+      <option value="Paddle Sweep"><option value="Blocked"><option value="Defensive">
+    </datalist>
+    <datalist id="dl-dels">
+      <option value="Full Toss"><option value="Yorker"><option value="Full"><option value="Half Volley">
+      <option value="Good Length"><option value="Back of Length"><option value="Short"><option value="Bouncer">
+      <option value="Waist Height">
+    </datalist>
+    <datalist id="dl-teams"></datalist>
+  </div>
+</div>
+
+<!-- ===== ADD LINK MODAL ===== -->
+<div class="modal-ov" id="addLinkModal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-title">
+      &#43; Add Coaching Plan Link
+      <span class="modal-close" onclick="closeModal('addLinkModal')">&#10005;</span>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="fg"><label>Description / Label</label><input type="text" id="lnk-lbl" placeholder="e.g. Length Ball Inswing stumps line"></div>
+      <div class="fg"><label>URL (YouTube / Video / Article)</label><input type="text" id="lnk-url" placeholder="https://youtube.com/watch?v=..."></div>
+      <div class="fg"><label>Apply to Player (leave blank = global)</label><input type="text" id="lnk-player" list="dl-bats" placeholder="Player name or blank for all"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-purple" onclick="savePlanLink()">&#10003; Save Link</button>
+    </div>
+    <div style="margin-top:20px;border-top:1px solid #1e2a5e;padding-top:16px" id="existingLinks"></div>
+  </div>
+</div>
+
+<script>
+/* ==================== CSV DATA ==================== */
+const CSV_DATA = [{"m":"569","in":1,"ov":0,"bl":1,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"Seam In","cn":"Inside Edge","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":0,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"In Swinger","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":0,"bl":3,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"In Swinger","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":0,"bl":4,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Out Swinger","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":0,"bl":5,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"No Movement","sn":"Push Shot","dn":"Out Swinger","cn":"Outside Edge","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":0,"bl":6,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Wide","fn":"No Movement","sn":"No Shot","dn":"No Movement","cn":"Left","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":1,"bl":1,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"No Movement","sn":"Back Defence","dn":"Seam In","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":1,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"No Movement","sn":"Drive","dn":"Seam Away","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":1,"bl":3,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Out Swinger","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":1,"bl":4,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"No Movement","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":1,"bl":5,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Seam In","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":1,"bl":6,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"No Movement","cn":"Mis-timed","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":2,"bl":1,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Out Swinger","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":2,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"In Swinger","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":2,"bl":3,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Wide","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Missed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":2,"bl":4,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Off Cutter","cn":"Hit Pad","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":2,"bl":5,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Uncomfertable","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":2,"bl":6,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":6,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":3,"bl":1,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Seam In","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":3,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Seam In","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":3,"bl":3,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":3,"bl":4,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"No Movement","cn":"Uncomfertable","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":3,"bl":5,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"No Movement","cn":"Middled","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":3,"bl":6,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Akif Javeed","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"Seam Away","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":4,"bl":1,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Leg Spinner","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":4,"bl":2,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Break","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":4,"bl":3,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"NoBallRuns","fn":"Back Foot","sn":"Forward Defence","dn":"No Movement","cn":"Uncomfertable","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":4,"bl":4,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Outside Edge","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":4,"bl":5,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Sweep","dn":"Off Break","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":4,"bl":6,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Off Break","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":5,"bl":1,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"No Movement","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":5,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"No Movement","cn":"Outside Edge","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":5,"bl":3,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":5,"bl":4,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"LegBye","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Uncomfertable","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":5,"bl":5,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"No Movement","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":5,"bl":6,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Backs Away","sn":"Drive","dn":"No Movement","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":6,"bl":1,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Stock Ball","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":6,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"No Movement","sn":"Forward Defence","dn":"Stock Ball","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":6,"bl":3,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Leg Glance","dn":"Stock Ball","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":6,"bl":4,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Stock Ball","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":6,"bl":5,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":6,"bl":6,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Steer","dn":"Stock Ball","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":7,"bl":1,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Break","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":7,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":7,"bl":3,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"Carrom Ball","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":7,"bl":4,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog Sweep","dn":"Carrom Ball","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":7,"bl":5,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Carrom Ball","cn":"Outside Edge","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":7,"bl":6,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"No Movement","cn":"Outside Edge","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":8,"bl":1,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":8,"bl":2,"bs":"RHB","bat":"Muhammad Naeem","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":0,"dk":"Caught","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"No Movement","cn":"Inside Edge","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":"Muhammad Naeem"},{"m":"569","in":1,"ov":8,"bl":3,"bs":"RHB","bat":"Abdullah Shafiq","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":8,"bl":4,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Stock Ball","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":8,"bl":5,"bs":"RHB","bat":"Abdullah Shafiq","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Stock Ball","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":8,"bl":6,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Stock Ball","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":9,"bl":1,"bs":"RHB","bat":"Abdullah Shafiq","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":9,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Backs Away","sn":"Slog","dn":"No Movement","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":9,"bl":3,"bs":"RHB","bat":"Abdullah Shafiq","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Leg Spinner","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":9,"bl":4,"bs":"RHB","bat":"Abdullah Shafiq","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Sweep","dn":"No Movement","cn":"Inside Edge","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":9,"bl":5,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog Sweep","dn":"Googly","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":9,"bl":6,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":0,"dk":"Run Out","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"No Movement","cn":"Uncomfertable","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":"Abdullah Shafique"},{"m":"569","in":1,"ov":10,"bl":1,"bs":"LHB","bat":"Parvez Emon","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":10,"bl":2,"bs":"LHB","bat":"Fakhar Zaman","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":0,"dk":"Caught","blt":"Runs","fn":"Front Foot","sn":"Slog Sweep","dn":"Stock Ball","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":"Fakhar Zaman"},{"m":"569","in":1,"ov":10,"bl":3,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"Stock Ball","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":10,"bl":4,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Flick","dn":"Stock Ball","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":10,"bl":5,"bs":"LHB","bat":"Parvez Emon","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Stock Ball","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":10,"bl":6,"bs":"LHB","bat":"Parvez Emon","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":2,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Sweep","dn":"Stock Ball","cn":"Mis-timed","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":11,"bl":1,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Break","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":11,"bl":2,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Off Break","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":11,"bl":3,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":11,"bl":4,"bs":"LHB","bat":"Parvez Emon","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Break","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":11,"bl":5,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Off Break","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":11,"bl":6,"bs":"LHB","bat":"Parvez Emon","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Off Break","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":12,"bl":1,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":2,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"Leg Spinner","cn":"Middled","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":12,"bl":2,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Sweep","dn":"Leg Spinner","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":12,"bl":3,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Steer","dn":"Googly","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":12,"bl":4,"bs":"LHB","bat":"Parvez Emon","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Googly","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":12,"bl":5,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":12,"bl":6,"bs":"LHB","bat":"Parvez Emon","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Sweep","dn":"Googly","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":13,"bl":1,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":2,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"Carrom Ball","cn":"Middled","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":13,"bl":2,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":13,"bl":3,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Sweep","dn":"No Movement","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":13,"bl":4,"bs":"LHB","bat":"Parvez Emon","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"No Movement","sn":"Drive","dn":"Quicker Ball","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":13,"bl":5,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Off Break","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":13,"bl":6,"bs":"LHB","bat":"Parvez Emon","bwl":"Saim Ayub","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Moves Infront","sn":"Drive","dn":"No Movement","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":14,"bl":1,"bs":"LHB","bat":"Parvez Emon","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":14,"bl":2,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Top Spinner","cn":"Mis-timed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":14,"bl":3,"bs":"LHB","bat":"Parvez Emon","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Googly","cn":"Uncomfertable","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":14,"bl":4,"bs":"LHB","bat":"Parvez Emon","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Googly","cn":"Top Edge","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":14,"bl":5,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"Leg Spinner","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":14,"bl":6,"bs":"LHB","bat":"Parvez Emon","bwl":"Marnus Labuschagne","ba":"LEG BREAK","bt":"SPIN","br":6,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Googly","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":15,"bl":1,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Seam In","cn":"Inside Edge","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":15,"bl":2,"bs":"LHB","bat":"Parvez Emon","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Wide","fn":"No Movement","sn":"Steer","dn":"Seam Away","cn":"Missed","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":15,"bl":3,"bs":"RHB","bat":"Sikander Raza","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"Caught","blt":"Runs","fn":"Backs Away","sn":"Drive","dn":"Seam In","cn":"Mis-timed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":"Parvez Emon"},{"m":"569","in":1,"ov":15,"bl":4,"bs":"RHB","bat":"Sikander Raza","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":6,"dk":"","blt":"Runs","fn":"Deep in Crease","sn":"Lap","dn":"Off Cutter","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":15,"bl":5,"bs":"RHB","bat":"Sikander Raza","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Bye","fn":"Back Foot","sn":"No Shot","dn":"Off Cutter","cn":"Left","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":15,"bl":6,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"yorker","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":16,"bl":1,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Backs Away","sn":"Drive","dn":"Stock Ball","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":16,"bl":2,"bs":"RHB","bat":"Sikander Raza","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":16,"bl":3,"bs":"RHB","bat":"Sikander Raza","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":6,"dk":"","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"No Movement","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":16,"bl":4,"bs":"RHB","bat":"Sikander Raza","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"Arm Ball","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":16,"bl":5,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":2,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":16,"bl":6,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Hassan Khan","ba":"SLA","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Backs Away","sn":"Drive","dn":"yorker","cn":"Inside Edge","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":17,"bl":1,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"Off Cutter","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":17,"bl":2,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"No Movement","sn":"Slice","dn":"Off Cutter","cn":"Middled","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":17,"bl":3,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":6,"dk":"","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"No Movement","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":17,"bl":4,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"yorker","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":17,"bl":5,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Reverse Sweep","dn":"yorker","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":17,"bl":6,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":18,"bl":1,"bs":"RHB","bat":"Sikander Raza","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Wide","fn":"No Movement","sn":"No Shot","dn":"Off Cutter","cn":"Left","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":18,"bl":2,"bs":"LHB","bat":"Haseeb Ullah","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"yorker","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":18,"bl":3,"bs":"RHB","bat":"Sikander Raza","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Off Cutter","cn":"Mis-timed","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":18,"bl":4,"bs":"RHB","bat":"Sikander Raza","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Off Cutter","cn":"Mis-timed","tr":4,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":18,"bl":5,"bs":"RHB","bat":"Sikander Raza","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":0,"dk":"Caught","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Off Cutter","cn":"Mis-timed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":"Sikander Raza"},{"m":"569","in":1,"ov":18,"bl":6,"bs":"RHB","bat":"Asif Ali","bwl":"Riley Meredith","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Off Cutter","cn":"Middled","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":19,"bl":1,"bs":"RHB","bat":"Asif Ali","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Wide","fn":"Front Foot","sn":"No Shot","dn":"No Movement","cn":"Left","tr":1,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":19,"bl":2,"bs":"RHB","bat":"Asif Ali","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":6,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Leg Cutter","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":19,"bl":3,"bs":"RHB","bat":"Asif Ali","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Deep in Crease","sn":"Drive","dn":"No Movement","cn":"Middled","tr":2,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":19,"bl":4,"bs":"RHB","bat":"Asif Ali","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":0,"dk":"Bowled","blt":"Runs","fn":"Deep in Crease","sn":"Slog","dn":"yorker","cn":"Missed","tr":0,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":"A Ali"},{"m":"569","in":1,"ov":19,"bl":5,"bs":"LHB","bat":"Shaheen Afridi","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":6,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":1,"ov":19,"bl":6,"bs":"LHB","bat":"Shaheen Afridi","bwl":"Muhammad Ali","ba":"RAMF","bt":"PACE","br":6,"dk":"","blt":"Runs","fn":"Deep in Crease","sn":"Slog","dn":"No Movement","cn":"Middled","tr":6,"btt":"Lahore Qalander","bwt":"Hyderabad Kingsmen","pd":""},{"m":"569","in":2,"ov":0,"bl":1,"bs":"LHB","bat":"Saim Ayub","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Seam In","cn":"Uncomfertable","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":0,"bl":2,"bs":"LHB","bat":"Saim Ayub","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Seam In","cn":"Middled","tr":2,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":0,"bl":3,"bs":"LHB","bat":"Saim Ayub","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":0,"bl":4,"bs":"LHB","bat":"Saim Ayub","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"Seam In","cn":"Uncomfertable","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":0,"bl":5,"bs":"LHB","bat":"Saim Ayub","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Bye","fn":"Front Foot","sn":"Forward Defence","dn":"Seam In","cn":"Uncomfertable","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":0,"bl":6,"bs":"RHB","bat":"Usman Khan","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"No Movement","sn":"Push Shot","dn":"Seam Away","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":1,"bl":1,"bs":"LHB","bat":"Saim Ayub","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":1,"bl":2,"bs":"LHB","bat":"Saim Ayub","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"No Movement","cn":"Inside Edge","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":1,"bl":3,"bs":"LHB","bat":"Saim Ayub","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Off Cutter","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":1,"bl":4,"bs":"RHB","bat":"Usman Khan","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"No Movement","sn":"Cut","dn":"No Movement","cn":"Outside Edge","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":1,"bl":5,"bs":"LHB","bat":"Saim Ayub","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Mis-timed","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":1,"bl":6,"bs":"LHB","bat":"Saim Ayub","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Cutter","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":2,"bl":1,"bs":"RHB","bat":"Usman Khan","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Seam Away","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":2,"bl":2,"bs":"RHB","bat":"Usman Khan","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"Seam In","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":2,"bl":3,"bs":"RHB","bat":"Usman Khan","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"yorker","cn":"Inside Edge","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":2,"bl":4,"bs":"RHB","bat":"Usman Khan","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"Caught","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Seam In","cn":"Uncomfertable","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Usman Khan"},{"m":"569","in":2,"ov":2,"bl":5,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":2,"bl":6,"bs":"LHB","bat":"Saim Ayub","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Slower Ball","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":3,"bl":1,"bs":"LHB","bat":"Saim Ayub","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Steer","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":3,"bl":2,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":3,"bl":3,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Leg Cutter","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":3,"bl":4,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Leg Cutter","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":3,"bl":5,"bs":"LHB","bat":"Saim Ayub","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"Caught","blt":"Runs","fn":"No Movement","sn":"Flick","dn":"Slower Ball","cn":"Uncomfertable","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Saim Ayub"},{"m":"569","in":2,"ov":3,"bl":6,"bs":"LHB","bat":"Kusal Parera","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":4,"bl":1,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"No Movement","sn":"Forward Defence","dn":"No Movement","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":4,"bl":2,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Slower Ball","cn":"Mis-timed","tr":2,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":4,"bl":3,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"No Movement","sn":"Pull","dn":"Seam Away","cn":"Mis-timed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":4,"bl":4,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Slower Ball","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":4,"bl":5,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":4,"bl":6,"bs":"LHB","bat":"Kusal Parera","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"LegBye","fn":"Front Foot","sn":"Leg Glance","dn":"No Movement","cn":"Middled","tr":3,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":5,"bl":1,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":5,"bl":2,"bs":"LHB","bat":"Kusal Parera","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Wide","fn":"Front Foot","sn":"Flick","dn":"Slower Ball","cn":"Missed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":5,"bl":3,"bs":"LHB","bat":"Kusal Parera","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Slower Ball","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":5,"bl":4,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Slower Ball","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":5,"bl":5,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Slower Ball","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":5,"bl":6,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Slower Ball","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":6,"bl":1,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"Off Break","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":6,"bl":2,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"LBW","blt":"Runs","fn":"Front Foot","sn":"Reverse Sweep","dn":"No Movement","cn":"Hit Pad","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Marnus Labuschagne"},{"m":"569","in":2,"ov":6,"bl":3,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Googly","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":6,"bl":4,"bs":"RHB","bat":"Irfan Niazi","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":6,"bl":5,"bs":"RHB","bat":"Irfan Niazi","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Wide","fn":"Front Foot","sn":"Sweep","dn":"Off Break","cn":"Missed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":6,"bl":6,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":7,"bl":1,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":7,"bl":2,"bs":"RHB","bat":"Irfan Niazi","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Uncomfertable","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":7,"bl":3,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Leg Glance","dn":"Slower Ball","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":7,"bl":4,"bs":"RHB","bat":"Irfan Niazi","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"Slower Ball","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":7,"bl":5,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Steer","dn":"Slower Ball","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":7,"bl":6,"bs":"RHB","bat":"Irfan Niazi","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"Caught","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"Slower Ball","cn":"Mis-timed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Irfan Niazi"},{"m":"569","in":2,"ov":8,"bl":1,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Inside Edge","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":8,"bl":2,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Googly","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":8,"bl":3,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Mis-timed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":8,"bl":4,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Off Break","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":8,"bl":5,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Down the Track","sn":"Drive","dn":"No Movement","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":8,"bl":6,"bs":"RHB","bat":"Marnus Labuschagne","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"Caught","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Off Break","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Marnus Labuschagne"},{"m":"569","in":2,"ov":9,"bl":1,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":9,"bl":2,"bs":"RHB","bat":"Hassan Khan","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Steer","dn":"Slower Ball","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":9,"bl":3,"bs":"RHB","bat":"Hassan Khan","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"yorker","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":9,"bl":4,"bs":"RHB","bat":"Hassan Khan","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"No Movement","sn":"Steer","dn":"No Movement","cn":"Inside Edge","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":9,"bl":5,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Steer","dn":"No Movement","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":9,"bl":6,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Steer","dn":"No Movement","cn":"Missed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":10,"bl":1,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"Slower Ball","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":10,"bl":2,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Break","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":10,"bl":3,"bs":"RHB","bat":"Hassan Khan","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Break","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":10,"bl":4,"bs":"RHB","bat":"Hassan Khan","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Cut","dn":"Off Break","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":10,"bl":5,"bs":"RHB","bat":"Hassan Khan","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Off Break","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":10,"bl":6,"bs":"RHB","bat":"Hassan Khan","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":6,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"No Movement","cn":"Middled","tr":6,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":11,"bl":1,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":11,"bl":2,"bs":"RHB","bat":"Hassan Khan","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":3,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Slower Ball","cn":"Mis-timed","tr":3,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":11,"bl":3,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":11,"bl":4,"bs":"RHB","bat":"Hassan Khan","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"Caught","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Outside Edge","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Hassan Khan"},{"m":"569","in":2,"ov":11,"bl":5,"bs":"RHB","bat":"Hammad Azam","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"No Movement","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":11,"bl":6,"bs":"RHB","bat":"Hammad Azam","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Seam In","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":12,"bl":1,"bs":"RHB","bat":"Hammad Azam","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":4,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Sweep","dn":"No Movement","cn":"Middled","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":12,"bl":2,"bs":"RHB","bat":"Hammad Azam","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":12,"bl":3,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":12,"bl":4,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":12,"bl":5,"bs":"RHB","bat":"Hammad Azam","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Googly","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":12,"bl":6,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Sikander Raza","ba":"OFF BREAK","bt":"SPIN","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"Googly","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":13,"bl":1,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"LegBye","fn":"Down the Track","sn":"Flick","dn":"Seam In","cn":"Hit Pad","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":13,"bl":2,"bs":"RHB","bat":"Hammad Azam","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"Slower Ball","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":13,"bl":3,"bs":"RHB","bat":"Rizwan Mehmood","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"Bowled","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"yorker","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Rizwan Mehmood"},{"m":"569","in":2,"ov":13,"bl":4,"bs":"RHB","bat":"Riley Meredith","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"yorker","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":13,"bl":5,"bs":"RHB","bat":"Riley Meredith","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Seam In","cn":"Uncomfertable","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":13,"bl":6,"bs":"RHB","bat":"Hammad Azam","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"No Movement","sn":"Cut","dn":"No Movement","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":14,"bl":1,"bs":"RHB","bat":"Hammad Azam","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Off Cutter","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":14,"bl":2,"bs":"RHB","bat":"Riley Meredith","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":14,"bl":3,"bs":"RHB","bat":"Hammad Azam","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"LegBye","fn":"Back Foot","sn":"Leg Glance","dn":"Seam In","cn":"Hit Pad","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":14,"bl":4,"bs":"RHB","bat":"Riley Meredith","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Backs Away","sn":"Steer","dn":"Off Cutter","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":14,"bl":5,"bs":"RHB","bat":"Riley Meredith","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"No Movement","sn":"Drive","dn":"Slower Ball","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":14,"bl":6,"bs":"RHB","bat":"Hammad Azam","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"Bowled","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"Seam In","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Hammad Azam"},{"m":"569","in":2,"ov":15,"bl":1,"bs":"RHB","bat":"Riley Meredith","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"No Movement","sn":"Drive","dn":"No Movement","cn":"Inside Edge","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":15,"bl":2,"bs":"RHB","bat":"Akif Javeed","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":15,"bl":3,"bs":"RHB","bat":"Riley Meredith","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Flick","dn":"Off Cutter","cn":"Inside Edge","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":15,"bl":4,"bs":"RHB","bat":"Riley Meredith","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"Off Cutter","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":15,"bl":5,"bs":"RHB","bat":"Riley Meredith","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":4,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Bouncer","cn":"Uncomfertable","tr":4,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":15,"bl":6,"bs":"RHB","bat":"Riley Meredith","bwl":"Haris Rauf","ba":"RAMF","bt":"PACE","br":0,"dk":"Run Out","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Off Cutter","cn":"Uncomfertable","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Riley Meredith"},{"m":"569","in":2,"ov":16,"bl":1,"bs":"RHB","bat":"Riley Meredith","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"No Movement","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":16,"bl":2,"bs":"RHB","bat":"Muhammad Ali","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":0,"dk":"","blt":"Wide","fn":"Back Foot","sn":"No Shot","dn":"Bouncer","cn":"Left","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":16,"bl":3,"bs":"RHB","bat":"Muhammad Ali","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"yorker","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":16,"bl":4,"bs":"RHB","bat":"Riley Meredith","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"Seam In","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":16,"bl":5,"bs":"RHB","bat":"Muhammad Ali","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Forward Defence","dn":"Seam In","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":16,"bl":6,"bs":"RHB","bat":"Riley Meredith","bwl":"Ubaid Shah","ba":"RAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"Slower Ball","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":17,"bl":1,"bs":"RHB","bat":"Riley Meredith","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"No Movement","sn":"Push Shot","dn":"Slower Ball","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":17,"bl":2,"bs":"RHB","bat":"Muhammad Ali","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Back Defence","dn":"Slower Ball","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":17,"bl":3,"bs":"RHB","bat":"Muhammad Ali","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Leg Cutter","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":17,"bl":4,"bs":"RHB","bat":"Riley Meredith","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Slower Ball","cn":"Mis-timed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":17,"bl":5,"bs":"RHB","bat":"Riley Meredith","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"Slower Ball","cn":"Mis-timed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":17,"bl":6,"bs":"RHB","bat":"Riley Meredith","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Slog","dn":"Slower Ball","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":18,"bl":1,"bs":"RHB","bat":"Riley Meredith","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Push Shot","dn":"yorker","cn":"Mis-timed","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":18,"bl":2,"bs":"RHB","bat":"Muhammad Ali","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Leg Glance","dn":"Off Cutter","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":18,"bl":3,"bs":"RHB","bat":"Riley Meredith","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Off Cutter","cn":"Missed","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":18,"bl":4,"bs":"RHB","bat":"Riley Meredith","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Pull","dn":"No Movement","cn":"Middled","tr":2,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":18,"bl":5,"bs":"RHB","bat":"Riley Meredith","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"Front Foot","sn":"Drive","dn":"Slower Ball","cn":"Middled","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":18,"bl":6,"bs":"RHB","bat":"Riley Meredith","bwl":"Shaheen Afridi","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"Back Foot","sn":"Drive","dn":"Off Cutter","cn":"Middled","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":19,"bl":1,"bs":"RHB","bat":"Riley Meredith","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"","sn":"","dn":"","cn":"","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":19,"bl":2,"bs":"RHB","bat":"Muhammad ali","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"","sn":"","dn":"","cn":"","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":19,"bl":3,"bs":"RHB","bat":"Riley Meredith","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Extra","fn":"","sn":"","dn":"","cn":"","tr":2,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":19,"bl":3,"bs":"RHB","bat":"Muhammad Ali","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"","sn":"","dn":"","cn":"","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":19,"bl":4,"bs":"RHB","bat":"Muhammad Ali","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":2,"dk":"","blt":"Runs","fn":"","sn":"","dn":"","cn":"","tr":2,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":19,"bl":5,"bs":"RHB","bat":"Muhammad Ali","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":1,"dk":"","blt":"Runs","fn":"","sn":"","dn":"","cn":"","tr":1,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":""},{"m":"569","in":2,"ov":19,"bl":6,"bs":"RHB","bat":"Riley Meredith","bwl":"Mustafizur Rahman","ba":"LAMF","bt":"PACE","br":0,"dk":"","blt":"Runs","fn":"","sn":"","dn":"","cn":"","tr":0,"btt":"Hyderabad Kingsmen","bwt":"Lahore Qalander","pd":"Muhammad Ali"}];
+
+/* ==================== STATE ==================== */
+let selPlayer = '';
+let selMode = 'ALL';
+let pendingRows = [];
+let extraBalls = [];
+let planLinks = [];
+
+function loadStorage(){
+  try{ extraBalls = JSON.parse(localStorage.getItem('tb_extra_balls')||'[]'); }catch(e){ extraBalls=[]; }
+  try{ planLinks  = JSON.parse(localStorage.getItem('tb_plan_links') ||'[]'); }catch(e){ planLinks=[]; }
+}
+function allBalls(){ return [...CSV_DATA, ...extraBalls]; }
+
+/* ==================== HELPERS ==================== */
+function initials(n){ return (n||'').split(' ').map(x=>x[0]||'').join('').toUpperCase().slice(0,3); }
+function pct(n,d){ return d===0?0:Math.round(n/d*100); }
+function fmtAvg(r,w){ return w>0?(r/w).toFixed(1):r+'*'; }
+function fmtEco(r,b){ return b===0?'-':(r/(b/6)).toFixed(2); }
+function getPhase(ov){ return ov<6?'PP':ov<15?'MO':'DP'; }
+function phLabel(p){ return p==='PP'?'PowerPlay (1-6)':p==='MO'?'Middle Overs (7-15)':'Death Overs (16-20)'; }
+function phCls(p){ return p==='PP'?'ph-pp':p==='MO'?'ph-mo':'ph-dp'; }
+function legal(arr){ return arr.filter(d=>d.blt==='Runs'); }
+
+/* Shot → wagon zone */
+const SZ = {
+  'Flick':'ML','Glance':'FL','Fine Glance':'FL','Pull':'SL','Hook':'SL',
+  'Slog':'DML','Cut':'PT','Upper Cut':'TM','Glance Cut':'TM',
+  'Drive':'CO','Off Drive':'CO','Straight Drive':'MO2','On Drive':'MO','Cover Drive':'CO',
+  'Push Shot':'CO','Blocked':'ST','Defensive':'ST',
+  'Scoop':'FL','Ramp':'TM','Sweep':'SL','Reverse Sweep':'PT','Down The Tracks':'CO',
+  'Paddle Sweep':'FL','Helicopter':'DML'
+};
+const ZP = {FL:{x:32,y:82},ML:{x:22,y:55},SL:{x:28,y:33},DML:{x:14,y:50},
+  CO:{x:78,y:22},MO:{x:42,y:10},MO2:{x:58,y:10},PT:{x:82,y:48},TM:{x:86,y:80},ST:{x:50,y:8}};
+
+/* Delivery → pitch Y (0=top/full toss, 1=bottom/bouncer) */
+const DY={'Full Toss':0.08,'Half Volley':0.22,'Yorker':0.18,'Full':0.35,'Good Length':0.52,'Back of Length':0.64,'Short':0.74,'Waist Height':0.70,'Bouncer':0.84};
+const UNORTHODOX=['Scoop','Ramp','Reverse Sweep','Down The Tracks','Switch Hit','Upper Cut','Glance Cut','Paddle Sweep','Helicopter','Dilscoop'];
+
+function computeStats(playerBalls, mode){
+  const fil = mode==='PACE'?playerBalls.filter(d=>d.bt==='PACE'):mode==='SPIN'?playerBalls.filter(d=>d.bt==='SPIN'):playerBalls;
+  const lg  = legal(fil);
+  const runs = lg.reduce((s,d)=>s+d.br,0);
+  const wkts = fil.filter(d=>d.dk&&d.pd&&d.pd===selPlayer).length;
+  const fours= lg.filter(d=>d.br===4).length;
+  const sixes= lg.filter(d=>d.br===6).length;
+  const dots = lg.filter(d=>d.br===0).length;
+  const bnds = fours+sixes;
+  const sr   = lg.length>0?(runs/lg.length*100).toFixed(1):'0.0';
+  const avgt = fmtAvg(runs,wkts);
+  return {fil,lg,runs,wkts,fours,sixes,dots,bnds,sr,avg:avgt,
+    dotPct:pct(dots,lg.length||1),bndrPct:pct(bnds,lg.length||1),balls:lg.length};
+}
+
+/* ==================== DONUT CHART ==================== */
+function donut(segs){
+  const cx=75,cy=75,R=62,ri=36;
+  const tot=segs.reduce((s,x)=>s+x.v,0)||1;
+  let a=-Math.PI/2, paths='';
+  segs.forEach(seg=>{
+    if(!seg.v) return;
+    const ang=(seg.v/tot)*2*Math.PI;
+    const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a);
+    const x2=cx+R*Math.cos(a+ang),y2=cy+R*Math.sin(a+ang);
+    const xi1=cx+ri*Math.cos(a),yi1=cy+ri*Math.sin(a);
+    const xi2=cx+ri*Math.cos(a+ang),yi2=cy+ri*Math.sin(a+ang);
+    const la=ang>Math.PI?1:0;
+    const mx=cx+(R+ri)/2*Math.cos(a+ang/2), my=cy+(R+ri)/2*Math.sin(a+ang/2);
+    paths+=`<path d="M${x1},${y1}A${R},${R} 0 ${la},1 ${x2},${y2}L${xi2},${yi2}A${ri},${ri} 0 ${la},0 ${xi1},${yi1}Z" fill="${seg.c}" opacity=".92"/>`;
+    if(ang>0.32) paths+=`<text x="${mx}" y="${my+4}" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">${seg.l}</text>`;
+    a+=ang;
+  });
+  return `<svg viewBox="0 0 150 150" width="150" height="150">
+    ${paths}
+    <circle cx="${cx}" cy="${cy}" r="${ri-4}" fill="#090e28"/>
+    <text x="${cx}" y="${cy-5}" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="900" id="donutCenter">—</text>
+    <text x="${cx}" y="${cy+9}" text-anchor="middle" fill="#475569" font-size="9">balls</text>
+  </svg>`;
+}
+
+/* ==================== RENDER ALL ==================== */
+function renderAll(){
+  renderPlan();
+  if(!selPlayer){ renderEmpty(); renderAllTabs(); return; }
+  const pb = allBalls().filter(d=>d.bat===selPlayer);
+  const s  = computeStats(pb, selMode);
+  const modeText={ALL:'Against All Bowling',PACE:'Against Pace Bowling',SPIN:'Against Spin Bowling'};
+  document.getElementById('pcModeHdr').textContent = modeText[selMode];
+  document.getElementById('pcName').textContent = selPlayer;
+  const bs = pb[0]?.bs||'';
+  document.getElementById('pcStyle').textContent = bs==='LHB'?'Left Hand Bat':bs==='RHB'?'Right Hand Bat':'—';
+  document.getElementById('pcInitials').textContent = initials(selPlayer);
+  setKPI('kpi-r',s.runs);setKPI('kpi-sr',s.sr);setKPI('kpi-avg',s.avg);
+  setKPI('kpi-4s',s.fours);setKPI('kpi-6s',s.sixes);setKPI('kpi-dot',s.dotPct+'%');
+  renderDonut(s);
+  renderMatchups(pb);
+  renderStrength(s.lg);
+  renderUnorthodox(s.lg);
+  renderDismissals(s.lg);
+  renderPitchMap(s.lg);
+  renderWagon(s.lg, 'wagonWrap');
+  renderSRGrid(s.lg);
+  renderAllTabs();
+}
+function setKPI(id,v){ document.getElementById(id).textContent=v; }
+function renderEmpty(){
+  document.getElementById('pcName').textContent='Select a Batter';
+  document.getElementById('pcStyle').textContent='Choose a player to view analytics';
+  document.getElementById('pcInitials').textContent='TB';
+  ['kpi-r','kpi-sr','kpi-avg','kpi-4s','kpi-6s','kpi-dot'].forEach(id=>setKPI(id,'—'));
+  document.getElementById('donutWrap').innerHTML='<div style="color:#475569;font-size:12px;padding:24px;text-align:center">Select a player</div>';
+  document.getElementById('matchupsWrap').innerHTML='';
+  document.getElementById('strengthWrap').innerHTML='<div style="color:#475569;font-size:12px">—</div>';
+  document.getElementById('unorthodoxWrap').innerHTML='<div style="color:#475569;font-size:12px">—</div>';
+  document.getElementById('dismissalsWrap').innerHTML='';
+  document.getElementById('pitchMapWrap').innerHTML='';
+  document.getElementById('wagonWrap').innerHTML='';
+  document.getElementById('srGridWrap').innerHTML='';
+}
+
+/* ==================== DONUT ==================== */
+function renderDonut(s){
+  const others = Math.max(0, 100-s.bndrPct-s.dotPct);
+  const segs=[
+    {l:'Bndr',v:s.bndrPct,c:'#6d28d9'},
+    {l:'Dots',v:s.dotPct,c:'#1e3a8a'},
+    {l:'Rotate',v:Math.max(0,others-pct(s.wkts,s.balls||1)),c:'#0e7490'},
+    {l:'Out%',v:pct(s.wkts,s.balls||1),c:'#991b1b'},
+  ];
+  document.getElementById('donutWrap').innerHTML=donut(segs);
+  const dc=document.getElementById('donutCenter');
+  if(dc) dc.textContent=s.balls;
+}
+
+/* ==================== MATCHUPS ==================== */
+function renderMatchups(pb){
+  const actions=[...new Set(pb.map(d=>d.ba))].filter(Boolean);
+  let html='';
+  actions.forEach(ba=>{
+    const ab=legal(pb.filter(d=>d.ba===ba));
+    const r=ab.reduce((s,d)=>s+d.br,0);
+    const w=pb.filter(d=>d.ba===ba&&d.dk&&d.pd===selPlayer).length;
+    const sr=(ab.length>0?(r/ab.length*100).toFixed(0):'-');
+    const avgt=fmtAvg(r,w);
+    html+=`<div class="mu-block">
+      <div class="mu-title">${ba}</div>
+      <div class="mu-stats">
+        <div class="mu-stat"><div class="mu-val">${sr}</div><div class="mu-lbl">SR</div></div>
+        <div class="mu-stat"><div class="mu-val">${avgt}</div><div class="mu-lbl">Avg</div></div>
+        <div class="mu-stat"><div class="mu-val">${w}</div><div class="mu-lbl">Wkts</div></div>
+        <div class="mu-stat"><div class="mu-val">${ab.length}</div><div class="mu-lbl">Balls</div></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('matchupsWrap').innerHTML=html||'<div style="color:#475569;font-size:12px">No data</div>';
+}
+
+/* ==================== STRENGTH ==================== */
+function renderStrength(lg){
+  const m={};lg.forEach(d=>{ if(d.sn) m[d.sn]=(m[d.sn]||{r:0,b:0}),m[d.sn].r+=d.br,m[d.sn].b++; });
+  const top=Object.entries(m).sort((a,b)=>b[1].r-a[1].r).slice(0,6);
+  document.getElementById('strengthWrap').innerHTML=top.map(([sn,v])=>`<div class="pc-bullet">${sn} &mdash; <strong>${v.r}</strong> runs in <strong>${v.b}</strong> balls</div>`).join('')||'<div style="color:#475569;font-size:12px">No shot data</div>';
+}
+
+/* ==================== UNORTHODOX ==================== */
+function renderUnorthodox(lg){
+  const found=[...new Set(lg.map(d=>d.sn))].filter(s=>UNORTHODOX.some(u=>s&&s.includes(u)));
+  document.getElementById('unorthodoxWrap').innerHTML=found.map(s=>`<div class="pc-bullet">${s}</div>`).join('')||'<div style="color:#475569;font-size:12px">No unorthodox shots recorded</div>';
+}
+
+/* ==================== PLAN LINKS ==================== */
+function renderPlan(){
+  const links=planLinks.filter(l=>!l.player||l.player===selPlayer||l.player==='');
+  let html='';
+  links.forEach((lnk,i)=>{
+    html+=`<a class="plan-link" href="${lnk.url}" target="_blank">
+      <span class="yt-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+      <span class="plan-txt">${lnk.label}</span>
+      <span class="plan-del" onclick="event.preventDefault();removePlanLink(${i})">&#10005;</span>
+    </a>`;
+  });
+  document.getElementById('planWrap').innerHTML=html||'<div style="color:#475569;font-size:12px;padding:4px 0">No plan links. Add one below &darr;</div>';
+}
+
+/* ==================== DISMISSALS SVG ==================== */
+function renderDismissals(lg){
+  const dims=lg.filter(d=>d.dk&&d.pd===selPlayer);
+  const W=260,H=200;
+  let dots='';
+  dims.forEach((d,i)=>{
+    const z=SZ[d.sn]||'ST';
+    const pos=ZP[z]||{x:50,y:50};
+    const rx=(Math.random()-.5)*0.14, ry=(Math.random()-.5)*0.1;
+    const x=40+(pos.x/100+rx)*185;
+    const y=18+(Math.min(i,7)%8)*22;
+    const col=d.bt==='PACE'?'#f87171':'#a78bfa';
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.5" fill="${col}" opacity=".85"><title>${d.sn||'—'} — ${d.dk||'—'} — ${d.dn||'—'} (ov ${d.ov+1})</title></circle>`;
+  });
+  document.getElementById('dismissalsWrap').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:260px">
+    <rect x="80" y="15" width="100" height="165" fill="#1e3a2f" rx="5" opacity=".55"/>
+    <line x1="58" y1="150" x2="202" y2="150" stroke="#6b7280" stroke-width="1.2" opacity=".5"/>
+    <line x1="58" y1="52" x2="202" y2="52" stroke="#6b7280" stroke-width="1.2" opacity=".5"/>
+    <line x1="118" y1="44" x2="118" y2="158" stroke="#e2e8f0" stroke-width="2.5"/>
+    <line x1="130" y1="44" x2="130" y2="158" stroke="#e2e8f0" stroke-width="2.5"/>
+    <line x1="142" y1="44" x2="142" y2="158" stroke="#e2e8f0" stroke-width="2.5"/>
+    <line x1="115" y1="44" x2="145" y2="44" stroke="#e2e8f0" stroke-width="1.8"/>
+    ${dots}
+    ${dims.length===0?`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#374151" font-size="12">No dismissals</text>`:''}
+    <circle cx="16" cy="${H-12}" r="5" fill="#f87171"/>
+    <text x="24" y="${H-8}" fill="#94a3b8" font-size="9">Pace</text>
+    <circle cx="62" cy="${H-12}" r="5" fill="#a78bfa"/>
+    <text x="70" y="${H-8}" fill="#94a3b8" font-size="9">Spin</text>
+    <text x="${W/2}" y="${H-2}" text-anchor="middle" fill="#475569" font-size="9">${dims.length} dismissal${dims.length!==1?'s':''}</text>
+  </svg>`;
+}
+
+/* ==================== PITCH MAP ==================== */
+function renderPitchMap(lg){
+  const W=200,PH=260,PT=25;
+  const zMap=dn=>{if(!dn)return 2;if(dn.includes('Full Toss')||dn.includes('Yorker'))return 0;if(dn.includes('Full')||dn.includes('Half Volley'))return 1;if(dn.includes('Good'))return 2;if(dn.includes('Short')||dn.includes('Back'))return 3;if(dn.includes('Bouncer')||dn.includes('Waist'))return 4;return 2;};
+  const zh=PH/5;
+  const zSt=[0,1,2,3,4].map(z=>{
+    const zb=lg.filter(d=>zMap(d.dn)===z);
+    const r=zb.reduce((s,d)=>s+d.br,0);
+    const w=zb.filter(d=>d.dk&&d.pd===selPlayer).length;
+    return{b:zb.length,r,w,sr:zb.length>0?(r/zb.length*100).toFixed(0):'-'};
+  });
+  const cols=['#0369a1','#0891b2','#0e7490','#92400e','#b45309'];
+  let rects='',dots='',lbls='';
+  zSt.forEach((zs,z)=>{
+    const y=PT+z*zh;
+    if(zs.b>0){const op=Math.min(.85,zs.b/8+.2);rects+=`<rect x="50" y="${y.toFixed(1)}" width="100" height="${(zh-2).toFixed(1)}" fill="${cols[z]}" opacity="${op}" rx="2"/>`;}
+  });
+  lg.forEach(d=>{
+    const z=zMap(d.dn);
+    const y=PT+z*zh+(Math.random()*.72)*zh+zh*.14;
+    const x=54+(Math.random()*.68)*90;
+    const col=d.br===4?'#22c55e':d.br===6?'#f59e0b':d.dk&&d.pd===selPlayer?'#dc2626':'#60a5fa';
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="${col}" opacity=".78"><title>Ov ${d.ov+1}: ${d.dn||'—'} → ${d.br}r (${d.sn||'—'})</title></circle>`;
+  });
+  ['Yorker','Full','Good Len','Short','Bouncer'].forEach((l,z)=>{
+    const y=PT+z*zh+zh/2+4;
+    lbls+=`<text x="46" y="${y.toFixed(1)}" text-anchor="end" font-size="8" fill="#475569">${l}</text>`;
+    if(zSt[z].b>0) lbls+=`<text x="154" y="${(y-3).toFixed(1)}" font-size="8" fill="#64748b">${zSt[z].b}b ${zSt[z].sr}SR</text>`;
+  });
+  document.getElementById('pitchMapWrap').innerHTML=`<svg viewBox="0 0 ${W} ${PH+35}" width="100%" style="max-width:200px">
+    <rect x="50" y="${PT}" width="100" height="${PH}" fill="#1a3828" rx="6" opacity=".55"/>
+    <rect x="50" y="${PT}" width="100" height="${PH}" fill="none" stroke="#2d4a3e" stroke-width="1" rx="6"/>
+    ${rects}${dots}${lbls}
+    <line x1="40" y1="${PT+40}" x2="160" y2="${PT+40}" stroke="#6b7280" stroke-width=".7" opacity=".35" stroke-dasharray="3,3"/>
+    <line x1="40" y1="${PT+PH-40}" x2="160" y2="${PT+PH-40}" stroke="#6b7280" stroke-width=".7" opacity=".35" stroke-dasharray="3,3"/>
+    <line x1="118" y1="${PT+PH-12}" x2="118" y2="${PT+PH+8}" stroke="#e2e8f0" stroke-width="2"/>
+    <line x1="130" y1="${PT+PH-12}" x2="130" y2="${PT+PH+8}" stroke="#e2e8f0" stroke-width="2"/>
+    <line x1="142" y1="${PT+PH-12}" x2="142" y2="${PT+PH+8}" stroke="#e2e8f0" stroke-width="2"/>
+    <circle cx="14" cy="${PH+20}" r="4" fill="#22c55e"/><text x="20" y="${PH+24}" fill="#94a3b8" font-size="8">4</text>
+    <circle cx="36" cy="${PH+20}" r="4" fill="#f59e0b"/><text x="42" y="${PH+24}" fill="#94a3b8" font-size="8">6</text>
+    <circle cx="60" cy="${PH+20}" r="4" fill="#dc2626"/><text x="66" y="${PH+24}" fill="#94a3b8" font-size="8">Wkt</text>
+    <circle cx="90" cy="${PH+20}" r="4" fill="#60a5fa"/><text x="96" y="${PH+24}" fill="#94a3b8" font-size="8">Run</text>
+  </svg>`;
+}
+
+/* ==================== WAGON WHEEL ==================== */
+function renderWagon(lg, targetId, highlightBnds=false){
+  const W=230,H=230,cx=115,cy=115,r=97;
+  const zones={FL:0,ML:0,SL:0,DML:0,CO:0,MO:0,MO2:0,PT:0,TM:0,ST:0};
+  let tot=0;
+  lg.forEach(d=>{
+    if(!d.sn||!d.br) return;
+    const z=SZ[d.sn];
+    if(z&&zones[z]!==undefined){zones[z]+=d.br;tot+=d.br;}
+  });
+  let lines='',labels='';
+  Object.entries(ZP).forEach(([zone,pos])=>{
+    const c=zones[zone]||0;const p=tot>0?Math.round(c/tot*100):0;
+    if(!c) return;
+    const x=pos.x/100*W, y=pos.y/100*H;
+    const op=Math.min(1,.15+p/40);
+    const col=highlightBnds?'#f59e0b':'#3b82f6';
+    lines+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${col}" stroke-width="${1.2+c/4}" opacity="${op}"/>`;
+    if(p>=3) labels+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="800" fill="#fff">${p}%</text>`;
+  });
+  document.getElementById(targetId).innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+    <ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${(r*.85).toFixed(1)}" fill="#1a3828" stroke="#2d4a3e" stroke-width="1.2" opacity=".7"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${(r*.55).toFixed(1)}" ry="${(r*.47).toFixed(1)}" fill="none" stroke="#2d4a3e" stroke-width="1" stroke-dasharray="4,3" opacity=".5"/>
+    <rect x="${cx-7}" y="${cy-28}" width="14" height="56" fill="#c8a96e" opacity=".25" rx="2"/>
+    ${lines}${labels}
+    ${tot===0?`<text x="${cx}" y="${cy+5}" text-anchor="middle" fill="#374151" font-size="11">No scoring shots</text>`:''}
+    <circle cx="${cx}" cy="${cy}" r="4" fill="#0f2820"/>
+  </svg>`;
+}
+
+/* ==================== SR GRID ==================== */
+function renderSRGrid(lg){
+  const lnMap=dn=>{if(!dn)return -1;if(dn.includes('Full Toss')||dn.includes('Yorker')||dn.includes('Full')||dn.includes('Half'))return 0;if(dn.includes('Good')||dn.includes('Back'))return 1;return 2;};
+  const liMap=sn=>{if(!sn)return 1;if(sn.includes('Wide')||sn.includes('Off'))return 0;if(sn.includes('Middle')||!sn.includes('Leg')&&!sn.includes('Off'))return 1;return 2;};
+  const g=Array(3).fill(0).map(()=>Array(3).fill(0).map(()=>({r:0,b:0})));
+  lg.forEach(d=>{const l=lnMap(d.dn),li=liMap(d.sn);if(l>=0&&l<3&&li>=0&&li<3){g[l][li].r+=d.br;g[l][li].b++;}});
+  const cols=['Wide/Off','Middle','Leg'],rows=['Full','Good Len','Short'];
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="padding:4px;color:#475569;font-size:9px;font-weight:800;text-transform:uppercase;width:60px"></th>${cols.map(c=>`<th style="padding:5px 4px;color:#64748b;font-size:9px;font-weight:800;text-align:center">${c}</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach((lbl,li)=>{
+    html+=`<tr><td style="padding:4px;color:#475569;font-size:9px;font-weight:800">${lbl}</td>`;
+    [0,1,2].forEach(ci=>{
+      const c=g[li][ci];
+      const sr=c.b>0?(c.r/c.b*100).toFixed(0):'-';
+      const op=c.b>0?Math.min(.9,c.b/10+.2):0;
+      const bg=sr==='-'?'#111535':sr>150?`rgba(185,28,28,${op})`:sr>100?`rgba(180,83,9,${op})`:sr>60?`rgba(21,128,61,${op})`:`rgba(37,99,235,${op})`;
+      html+=`<td style="background:${bg};padding:6px 4px;text-align:center;border:1px solid #090e28;border-radius:4px"><div style="font-size:14px;font-weight:900;color:#fff">${sr}</div>${c.b>0?`<div style="font-size:8px;color:rgba(255,255,255,.55)">${c.b}b</div>`:''}</td>`;
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table>`;
+  document.getElementById('srGridWrap').innerHTML=html;
+}
+
+/* ==================== ALL TABS ==================== */
+function renderAllTabs(){
+  renderScorecard();renderPhaseStats();renderPhaseComp();
+  renderBothInnStats();renderOvByOv();renderBoundaries();renderDotSeq();
+}
+
+/* ==================== SCORECARD ==================== */
+function renderScorecard(){
+  const ab=allBalls();let html='';
+  [1,2].forEach(inn=>{
+    const ib=ab.filter(d=>d.in===inn);if(!ib.length)return;
+    const tName=ib[0]?.btt||'Innings '+inn;
+    const lg2=legal(ib);
+    const totalR=ib.reduce((s,d)=>s+d.tr,0);
+    const wkts=[...new Set(ib.filter(d=>d.dk&&d.pd).map(d=>d.pd))].length;
+    const batters=[...new Set(ib.map(d=>d.bat))].filter(Boolean);
+    const batRows=batters.map(bat=>{
+      const bb=legal(ib.filter(d=>d.bat===bat));
+      const r=bb.reduce((s,d)=>s+d.br,0);
+      const f=bb.filter(d=>d.br===4).length,s6=bb.filter(d=>d.br===6).length;
+      const sr=(bb.length>0?(r/bb.length*100).toFixed(1):'0.0');
+      const dism=ib.find(d=>d.pd===bat&&d.dk);
+      const firstOv=ib.find(d=>d.bat===bat)?.ov||0;
+      return{bat,r,b:bb.length,f,s6,sr,dk:dism?.dk||'not out',bwl:dism?.bwl||'',phase:getPhase(firstOv)};
+    });
+    html+=`<div style="margin-bottom:28px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:900;color:${inn===1?'#22d3ee':'#f472b6'}">${tName} — ${inn==='1'||inn===1?'1st':'2nd'} Innings</div>
+        <div style="font-size:20px;font-weight:900;color:#fff">${totalR}<span style="font-size:14px;color:#64748b">/${wkts}</span></div>
+      </div>
+      <table class="sc-table" style="margin-bottom:10px">
+        <thead><tr><th>Batter</th><th>Dismissal</th><th style="text-align:right">R</th><th style="text-align:right">B</th><th style="text-align:right">4s</th><th style="text-align:right">6s</th><th style="text-align:right">SR</th><th>Phase In</th></tr></thead>
+        <tbody>${batRows.map(row=>`<tr>
+          <td style="cursor:pointer;color:${row.bat===selPlayer?'#22d3ee':'#e2e8f0'};font-weight:${row.bat===selPlayer?'800':'400'}" onclick="selectBatter('${row.bat.replace(/'/g,"&#39;")}')">${row.bat}${row.bat===selPlayer?' &#9733;':''}</td>
+          <td class="${row.dk==='not out'?'notout':'out'}">${row.dk}${row.bwl?' b '+row.bwl:''}</td>
+          <td style="text-align:right;font-weight:800;font-size:15px">${row.r}</td>
+          <td style="text-align:right">${row.b}</td>
+          <td style="text-align:right">${row.f}</td>
+          <td style="text-align:right">${row.s6}</td>
+          <td style="text-align:right">${row.sr}</td>
+          <td><span class="ph-pill ${phCls(row.phase)}">${row.phase}</span></td>
+        </tr>`).join('')}</tbody>
+        <tfoot><tr class="total-row"><td colspan="2">Total</td><td style="text-align:right">${totalR}</td><td colspan="5"></td></tr></tfoot>
+      </table>`;
+    const bowlers=[...new Set(ib.map(d=>d.bwl))].filter(Boolean);
+    const bwlRows=bowlers.map(bwl=>{
+      const bb=ib.filter(d=>d.bwl===bwl);
+      const lg3=legal(bb);
+      const r=bb.reduce((s,d)=>s+d.tr,0);
+      const w=bb.filter(d=>d.dk&&d.pd).length;
+      const ovs=Math.floor(lg3.length/6)+'.'+lg3.length%6;
+      return{bwl,ovs,r,w,eco:fmtEco(r,lg3.length),wd:bb.filter(d=>d.blt==='Wide').length,nb:bb.filter(d=>d.blt==='No Ball').length,dots:lg3.filter(d=>d.tr===0).length};
+    });
+    html+=`<table class="sc-table">
+      <thead><tr><th>Bowler</th><th style="text-align:right">O</th><th style="text-align:right">R</th><th style="text-align:right">W</th><th style="text-align:right">Eco</th><th style="text-align:right">Dots</th><th style="text-align:right">Wd</th><th style="text-align:right">NB</th></tr></thead>
+      <tbody>${bwlRows.map(row=>`<tr>
+        <td>${row.bwl}</td>
+        <td style="text-align:right">${row.ovs}</td>
+        <td style="text-align:right">${row.r}</td>
+        <td style="text-align:right;font-weight:800;color:${row.w>2?'#4ade80':row.w>0?'#22d3ee':'#e2e8f0'}">${row.w}</td>
+        <td style="text-align:right;color:${parseFloat(row.eco)<7?'#4ade80':parseFloat(row.eco)<10?'#f59e0b':'#f87171'}">${row.eco}</td>
+        <td style="text-align:right">${row.dots}</td>
+        <td style="text-align:right">${row.wd}</td>
+        <td style="text-align:right">${row.nb}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  });
+  document.getElementById('tab-scorecard').innerHTML=html||'<div style="color:#475569;padding:20px">No scorecard data available</div>';
+}
+function selectBatter(n){ selPlayer=n; document.getElementById('playerSelect').value=n; renderAll(); notify('&#9733; Now viewing: '+n); }
+
+/* ==================== PHASE STATS ==================== */
+function renderPhaseStats(){
+  const ab=allBalls();let html='';
+  [1,2].forEach(inn=>{
+    const ib=ab.filter(d=>d.in===inn);if(!ib.length)return;
+    const tName=ib[0]?.btt||'Innings '+inn;
+    html+=`<div style="margin-bottom:20px"><div style="font-size:14px;font-weight:900;color:${inn===1?'#22d3ee':'#f472b6'};margin-bottom:10px">${tName}</div><div class="ph-grid">`;
+    ['PP','MO','DP'].forEach(ph=>{
+      const pb=ib.filter(d=>getPhase(d.ov)===ph);
+      const lg2=legal(pb);
+      const totalR=pb.reduce((s,d)=>s+d.tr,0);
+      const w=pb.filter(d=>d.dk&&d.pd).length;
+      const f=lg2.filter(d=>d.br===4).length,s6=lg2.filter(d=>d.br===6).length;
+      const dots=lg2.filter(d=>d.br===0).length;
+      const rr=lg2.length>0?(totalR/(lg2.length/6)).toFixed(2):'-';
+      const bndrPct=pct(f+s6,lg2.length||1);
+      html+=`<div class="ph-card">
+        <div class="ph-card-title"><span class="ph-pill ${phCls(ph)}">${phLabel(ph)}</span></div>
+        <div class="ph-row"><span class="ph-row-lbl">Score</span><span class="ph-row-val" style="color:#22d3ee;font-size:16px;font-weight:900">${totalR}/${w}</span></div>
+        <div class="ph-row"><span class="ph-row-lbl">Balls</span><span class="ph-row-val">${lg2.length}</span></div>
+        <div class="ph-row"><span class="ph-row-lbl">Run Rate</span><span class="ph-row-val">${rr}</span></div>
+        <div class="ph-row"><span class="ph-row-lbl">4s / 6s</span><span class="ph-row-val">${f} / ${s6}</span></div>
+        <div class="ph-row"><span class="ph-row-lbl">Boundary %</span><span class="ph-row-val">${bndrPct}%</span></div>
+        <div class="ph-row"><span class="ph-row-lbl">Dot Balls</span><span class="ph-row-val">${dots} (${pct(dots,lg2.length||1)}%)</span></div>
+        <div class="ph-row"><span class="ph-row-lbl">Wickets</span><span class="ph-row-val" style="color:${w>2?'#f87171':'#e2e8f0'}">${w}</span></div>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  });
+  document.getElementById('tab-phasestats').innerHTML=html||'<div style="color:#475569;padding:20px">No phase data</div>';
+}
+
+/* ==================== PHASE COMPARISON ==================== */
+function renderPhaseComp(){
+  const ab=allBalls();
+  const i1=ab.filter(d=>d.in===1),i2=ab.filter(d=>d.in===2);
+  if(!i1.length&&!i2.length){document.getElementById('tab-phasecomp').innerHTML='<div style="color:#475569;padding:20px">No data</div>';return;}
+  const t1=i1[0]?.btt||'Inn 1',t2=i2[0]?.btt||'Inn 2';
+  const pStat=(ib,ph)=>{
+    const pb=ib.filter(d=>getPhase(d.ov)===ph);
+    const lg2=legal(pb);
+    const r=pb.reduce((s,d)=>s+d.tr,0);
+    const w=pb.filter(d=>d.dk&&d.pd).length;
+    const f=lg2.filter(d=>d.br===4).length,s6=lg2.filter(d=>d.br===6).length;
+    const dots=lg2.filter(d=>d.br===0).length;
+    const rr=lg2.length>0?parseFloat((r/(lg2.length/6)).toFixed(2)):0;
+    return{score:`${r}/${w}`,rr,f,s6,dots,dotPct:pct(dots,lg2.length||1),bndrPct:pct(f+s6,lg2.length||1)};
+  };
+  let html='';
+  ['PP','MO','DP'].forEach(ph=>{
+    const s1=pStat(i1,ph),s2=pStat(i2,ph);
+    const fields=[['Score','score',''],['Run Rate','rr',''],['Fours','f',''],['Sixes','s6',''],['Boundary %','bndrPct','%'],['Dot %','dotPct','%']];
+    html+=`<div style="margin-bottom:18px;background:#111535;border-radius:12px;padding:16px;border:1px solid #1e2a5e">
+      <div style="margin-bottom:14px"><span class="ph-pill ${phCls(ph)}">${phLabel(ph)}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:0">
+        <div style="text-align:right;padding-right:14px;border-right:1px solid #1e2a5e">
+          <div style="font-size:11px;font-weight:900;color:#22d3ee;margin-bottom:8px;text-align:right">${t1}</div>
+          ${fields.map(([l,k,suf])=>`<div style="display:flex;justify-content:flex-end;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid #0d1130"><span style="font-size:11px;color:#475569">${l}</span><span style="font-size:14px;font-weight:800;color:#22d3ee">${s1[k]}${suf}</span></div>`).join('')}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;color:#2d3a6e;font-size:20px;font-weight:900">vs</div>
+        <div style="padding-left:14px;border-left:1px solid #1e2a5e">
+          <div style="font-size:11px;font-weight:900;color:#f472b6;margin-bottom:8px">${t2}</div>
+          ${fields.map(([l,k,suf])=>`<div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid #0d1130"><span style="font-size:14px;font-weight:800;color:#f472b6">${s2[k]}${suf}</span><span style="font-size:11px;color:#475569">${l}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('tab-phasecomp').innerHTML=html;
+}
+
+/* ==================== BOTH INNINGS STATS ==================== */
+function renderBothInnStats(){
+  const ab=allBalls();
+  const i1=ab.filter(d=>d.in===1),i2=ab.filter(d=>d.in===2);
+  const t1=i1[0]?.btt||'Inn 1',t2=i2[0]?.btt||'Inn 2';
+  const fs=ib=>{
+    if(!ib.length)return null;
+    const lg2=legal(ib);
+    const runs=ib.reduce((s,d)=>s+d.tr,0);
+    const wkts=[...new Set(ib.filter(d=>d.dk&&d.pd).map(d=>d.pd))].length;
+    const f=lg2.filter(d=>d.br===4).length,s6=lg2.filter(d=>d.br===6).length;
+    const dots=lg2.filter(d=>d.br===0).length;
+    const wd=ib.filter(d=>d.blt==='Wide').length,nb=ib.filter(d=>d.blt==='No Ball').length;
+    const rr=lg2.length>0?parseFloat((runs/(lg2.length/6)).toFixed(2)):0;
+    const topScorer=[...new Set(lg2.map(d=>d.bat))].map(b=>{
+      const bb=lg2.filter(d=>d.bat===b);return{b,r:bb.reduce((s,d)=>s+d.br,0)};
+    }).sort((a,b2)=>b2.r-a.r)[0];
+    const bestBowler=[...new Set(ib.map(d=>d.bwl))].filter(Boolean).map(bwl=>{
+      const bb=ib.filter(d=>d.bwl===bwl);const w=bb.filter(d=>d.dk&&d.pd).length;
+      const r2=bb.reduce((s,d)=>s+d.tr,0);const l2=legal(bb).length;
+      return{bwl,w,eco:l2>0?parseFloat((r2/(l2/6)).toFixed(2)):99};
+    }).sort((a,b2)=>b2.w-a.w||a.eco-b2.eco)[0];
+    return{runs,wkts,f,s6,dots,wd,nb,rr,balls:lg2.length,topScorer,bestBowler};
+  };
+  const s1=fs(i1),s2=fs(i2);
+  if(!s1&&!s2){document.getElementById('tab-bothstats').innerHTML='<div style="color:#475569;padding:20px">No innings data</div>';return;}
+  const rows=[['Total Runs','runs'],['Wickets','wkts'],['Run Rate','rr'],['Legal Balls','balls'],['Fours','f'],['Sixes','s6'],['Dot Balls','dots'],['Wides','wd'],['No Balls','nb']];
+  const maxV={};rows.forEach(([,k])=>maxV[k]=Math.max(parseFloat(s1?.[k]||0),parseFloat(s2?.[k]||0))||1);
+  let html=`<div style="display:grid;grid-template-columns:1fr 130px 1fr;align-items:center;padding:8px 0;border-bottom:2px solid #1e2a5e;margin-bottom:4px">
+    <div style="text-align:right;font-size:12px;font-weight:900;color:#22d3ee;padding-right:8px">${t1}</div>
+    <div style="text-align:center;font-size:11px;color:#475569;font-weight:700">STAT</div>
+    <div style="font-size:12px;font-weight:900;color:#f472b6;padding-left:8px">${t2}</div>
+  </div>`;
+  rows.forEach(([label,k])=>{
+    const v1=s1?.[k]??'-',v2=s2?.[k]??'-';
+    const p1=Math.round(parseFloat(v1)/maxV[k]*100),p2=Math.round(parseFloat(v2)/maxV[k]*100);
+    html+=`<div style="display:grid;grid-template-columns:1fr 130px 1fr;align-items:center;padding:6px 0;border-bottom:1px solid #111535">
+      <div style="padding-right:10px">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+          <div style="height:8px;flex:1;background:#111535;border-radius:4px;overflow:hidden;max-width:120px"><div style="width:${p1}%;height:100%;background:#22d3ee;border-radius:4px;float:right"></div></div>
+          <span style="font-size:15px;font-weight:900;color:#22d3ee;min-width:36px;text-align:right">${v1}</span>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#475569;font-weight:700;padding:0 8px">${label}</div>
+      <div style="padding-left:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:15px;font-weight:900;color:#f472b6;min-width:36px">${v2}</span>
+          <div style="height:8px;flex:1;background:#111535;border-radius:4px;overflow:hidden;max-width:120px"><div style="width:${p2}%;height:100%;background:#f472b6;border-radius:4px"></div></div>
+        </div>
+      </div>
+    </div>`;
+  });
+  if(s1?.topScorer||s2?.topScorer){
+    html+=`<div style="display:grid;grid-template-columns:1fr 130px 1fr;align-items:center;padding:8px 0;margin-top:4px;border-top:1px solid #1e2a5e">
+      <div style="text-align:right;padding-right:8px;font-size:13px;font-weight:800;color:#22d3ee">${s1?.topScorer?s1.topScorer.b+' ('+s1.topScorer.r+'r)':'-'}</div>
+      <div style="text-align:center;font-size:11px;color:#475569;font-weight:700">Top Scorer</div>
+      <div style="padding-left:8px;font-size:13px;font-weight:800;color:#f472b6">${s2?.topScorer?s2.topScorer.b+' ('+s2.topScorer.r+'r)':'-'}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 130px 1fr;align-items:center;padding:8px 0;border-bottom:1px solid #1e2a5e">
+      <div style="text-align:right;padding-right:8px;font-size:13px;font-weight:800;color:#22d3ee">${s1?.bestBowler?s1.bestBowler.bwl+' '+s1.bestBowler.w+'W/'+s1.bestBowler.eco+'eco':'-'}</div>
+      <div style="text-align:center;font-size:11px;color:#475569;font-weight:700">Best Bowler</div>
+      <div style="padding-left:8px;font-size:13px;font-weight:800;color:#f472b6">${s2?.bestBowler?s2.bestBowler.bwl+' '+s2.bestBowler.w+'W/'+s2.bestBowler.eco+'eco':'-'}</div>
+    </div>`;
+  }
+  document.getElementById('tab-bothstats').innerHTML=html;
+}
+
+/* ==================== OVER BY OVER ==================== */
+function renderOvByOv(){
+  const ab=allBalls();let html='';
+  [1,2].forEach(inn=>{
+    const ib=ab.filter(d=>d.in===inn);if(!ib.length)return;
+    const tName=ib[0]?.btt||'Inn '+inn;
+    html+=`<div style="margin-bottom:24px"><div style="font-size:14px;font-weight:900;color:${inn===1?'#22d3ee':'#f472b6'};margin-bottom:10px">${tName} — Ball by Ball</div>`;
+    const maxOv=Math.max(...ib.map(d=>d.ov));
+    let cumR=0,cumW=0;
+    for(let ov=0;ov<=maxOv;ov++){
+      const ob=ib.filter(d=>d.ov===ov);if(!ob.length)continue;
+      const ovR=ob.reduce((s,d)=>s+d.tr,0);
+      const ovW=ob.filter(d=>d.dk&&d.pd).length;
+      cumR+=ovR;cumW+=ovW;
+      const ph=getPhase(ov);
+      const phCol=ph==='PP'?'#0369a1':ph==='MO'?'#92400e':'#065f46';
+      const balls2=ob.map(d=>{
+        const c=d.blt==='Wide'||d.blt==='No Ball'?'bX':d.br===6?'b6':d.br===4?'b4':d.dk&&d.pd?'bW':d.br===0?'b0':d.br<=2?'b1':'b2';
+        const lbl=d.blt==='Wide'?'Wd':d.blt==='No Ball'?'NB':d.dk&&d.pd?'W':String(d.br);
+        return `<span class="ball ${c}" title="${d.bat||'?'} vs ${d.bwl||'?'}: ${d.sn||'—'} (${d.dn||'—'})">${lbl}</span>`;
+      }).join('');
+      html+=`<div class="ovo-row">
+        <span class="ovo-label" style="color:${phCol}">${ov+1}</span>
+        <div class="ovo-balls">${balls2}</div>
+        <span class="ovo-meta">${ovR}r${ovW?' — '+ovW+'W':''}</span>
+        <span class="ovo-cum">${cumR}/${cumW}</span>
+      </div>`;
+    }
+    html+='</div>';
+  });
+  document.getElementById('tab-overbyover').innerHTML=html||'<div style="color:#475569;padding:20px">No over data</div>';
+}
+
+/* ==================== BOUNDARIES MAP ==================== */
+function renderBoundaries(){
+  const ab=allBalls();
+  const fours=ab.filter(d=>d.br===4&&d.blt==='Runs');
+  const sixes=ab.filter(d=>d.br===6&&d.blt==='Runs');
+  const byShot=arr=>{const m={};arr.forEach(d=>{m[d.sn||'Unknown']=(m[d.sn||'Unknown']||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
+  const byDel=arr=>{const m={};arr.forEach(d=>{m[d.dn||'Unknown']=(m[d.dn||'Unknown']||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
+  const byPh=arr=>{const m={PP:0,MO:0,DP:0};arr.forEach(d=>{m[getPhase(d.ov)]++;});return m;};
+  const barRow=(l,c,mx,col)=>`<div class="br-row"><span class="br-label">${l}</span><div class="br-bar"><div class="br-fill" style="width:${Math.round(c/(mx||1)*100)}%;background:${col}"></div></div><span class="br-val">${c}</span></div>`;
+  const fs=byShot(fours),ss=byShot(sixes),fd=byDel(fours),sd=byDel(sixes),fp=byPh(fours),sp=byPh(sixes);
+  const maxFs=fs[0]?.[1]||1,maxSs=ss[0]?.[1]||1,maxFd=fd[0]?.[1]||1,maxSd=sd[0]?.[1]||1;
+  const maxFp=Math.max(...Object.values(fp))||1,maxSp=Math.max(...Object.values(sp))||1;
+  let html=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div>
+      <div style="font-size:14px;font-weight:900;color:#22c55e;margin-bottom:12px">&#9654; Fours (${fours.length})</div>
+      <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:10px">By Shot</div>
+      ${fs.slice(0,7).map(([s,c])=>barRow(s,c,maxFs,'#22c55e')).join('')}
+      <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:14px">By Delivery Type</div>
+      ${fd.slice(0,6).map(([s,c])=>barRow(s,c,maxFd,'#16a34a')).join('')}
+      <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:14px">By Phase</div>
+      ${['PP','MO','DP'].map(ph=>barRow(phLabel(ph).split(' (')[0],fp[ph]||0,maxFp,'#15803d')).join('')}
+    </div>
+    <div>
+      <div style="font-size:14px;font-weight:900;color:#f59e0b;margin-bottom:12px">&#9654; Sixes (${sixes.length})</div>
+      <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:10px">By Shot</div>
+      ${ss.slice(0,7).map(([s,c])=>barRow(s,c,maxSs,'#f59e0b')).join('')}
+      <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:14px">By Delivery Type</div>
+      ${sd.slice(0,6).map(([s,c])=>barRow(s,c,maxSd,'#d97706')).join('')}
+      <div style="font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:14px">By Phase</div>
+      ${['PP','MO','DP'].map(ph=>barRow(phLabel(ph).split(' (')[0],sp[ph]||0,maxSp,'#b45309')).join('')}
+    </div>
+  </div>
+  <div style="margin-top:20px"><div style="font-size:13px;font-weight:900;color:#e2e8f0;margin-bottom:12px">Boundary Wagon Zone</div>
+  <div id="bndWagon"></div></div>`;
+  document.getElementById('tab-boundaries').innerHTML=html;
+  renderWagon(legal(ab).filter(d=>d.br===4||d.br===6),'bndWagon',true);
+}
+
+/* ==================== DOT SEQUENCES ==================== */
+function renderDotSeq(){
+  const ab=allBalls();let html='';
+  [1,2].forEach(inn=>{
+    const ib=legal(ab.filter(d=>d.in===inn));if(!ib.length)return;
+    const tName=ab.filter(d=>d.in===inn)[0]?.btt||'Inn '+inn;
+    html+=`<div style="margin-bottom:28px"><div style="font-size:14px;font-weight:900;color:${inn===1?'#22d3ee':'#f472b6'};margin-bottom:12px">${tName}</div>`;
+    const isDot=d=>d.br===0&&d.blt==='Runs';
+    const seqCounts={2:0,3:0,4:0,5:0,6:0};
+    let seqs=[],cur=[];
+    ib.forEach(d=>{
+      if(isDot(d)){cur.push(d);}
+      else{if(cur.length>=2)seqs.push([...cur]);cur=[];}
+    });
+    if(cur.length>=2)seqs.push(cur);
+    seqs.forEach(seq=>{for(let k=2;k<=6;k++)if(seq.length>=k)seqCounts[k]++;});
+    const totDots=ib.filter(isDot).length;
+    const dotPct2=pct(totDots,ib.length);
+    const maxCnt=Math.max(...Object.values(seqCounts))||1;
+    html+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div style="background:#111535;border-radius:10px;padding:14px;text-align:center;border:1px solid #1e2a5e">
+        <div style="font-size:30px;font-weight:900;color:#f87171">${totDots}</div>
+        <div style="font-size:10px;color:#475569;font-weight:800;text-transform:uppercase;margin-top:2px">Total Dot Balls</div>
+      </div>
+      <div style="background:#111535;border-radius:10px;padding:14px;text-align:center;border:1px solid #1e2a5e">
+        <div style="font-size:30px;font-weight:900;color:#f87171">${dotPct2}%</div>
+        <div style="font-size:10px;color:#475569;font-weight:800;text-transform:uppercase;margin-top:2px">Dot Ball %</div>
+      </div>
+      <div style="background:#111535;border-radius:10px;padding:14px;text-align:center;border:1px solid #1e2a5e">
+        <div style="font-size:30px;font-weight:900;color:#f87171">${seqs.length}</div>
+        <div style="font-size:10px;color:#475569;font-weight:800;text-transform:uppercase;margin-top:2px">Sequences (2+ dots)</div>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">`;
+    [2,3,4,5,6].forEach(n=>{
+      const c=seqCounts[n];
+      html+=`<div class="ds-row">
+        <span class="ds-lbl">${n} Consecutive Dot Balls</span>
+        <span class="ds-val">${c}</span>
+        <div class="ds-bar"><div class="ds-fill" style="width:${Math.round(c/maxCnt*100)}%"></div></div>
+      </div>`;
+    });
+    html+=`</div>`;
+    if(seqs.length){
+      html+=`<div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Notable Sequences</div><div style="display:flex;flex-wrap:wrap;gap:10px">`;
+      seqs.sort((a,b)=>b.length-a.length).slice(0,8).forEach(seq=>{
+        const ov=seq[0]?.ov,bat=seq[0]?.bat||'',bwl=seq[0]?.bwl||'';
+        html+=`<div style="background:#111535;border-radius:8px;padding:10px 14px;border:1px solid #1e2a5e">
+          <div style="font-size:10px;color:#475569;margin-bottom:5px">Ov ${ov+1} &mdash; ${bat} vs ${bwl}</div>
+          <div style="display:flex;gap:3px">${seq.map(()=>`<span class="ball b0">0</span>`).join('')}</div>
+          <div style="font-size:10px;color:#475569;margin-top:5px">${seq.length} dot${seq.length>1?'s':''} in a row</div>
+        </div>`;
+      });
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  document.getElementById('tab-dotseq').innerHTML=html||'<div style="color:#475569;padding:20px">No dot ball data</div>';
+}
+
+/* ==================== TABS ==================== */
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-pane').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ==================== MODAL ==================== */
+function openModal(id){ document.getElementById(id).classList.add('open'); if(id==='addLinkModal')refreshLinks(); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-ov').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+
+/* ==================== ADD DATA ==================== */
+function addBallRow(){
+  const bat=document.getElementById('f-bat').value.trim();
+  const bwl=document.getElementById('f-bwl').value.trim();
+  if(!bat||!bwl){alert('Batsman and Bowler are required');return;}
+  const row={
+    m:'custom',in:+document.getElementById('f-in').value,ov:+document.getElementById('f-ov').value||0,
+    bl:+document.getElementById('f-bl').value||1,bs:document.getElementById('f-bs').value,bat,
+    bwl,ba:document.getElementById('f-ba').value,bt:document.getElementById('f-bt').value,
+    br:+document.getElementById('f-br').value||0,dk:document.getElementById('f-dk').value.trim(),
+    blt:document.getElementById('f-blt').value,fn:document.getElementById('f-fn').value,
+    sn:document.getElementById('f-sn').value.trim(),dn:document.getElementById('f-dn').value.trim(),
+    cn:document.getElementById('f-cn').value.trim(),tr:+document.getElementById('f-tr').value||0,
+    btt:document.getElementById('f-btt').value.trim(),bwt:document.getElementById('f-bwt').value.trim(),
+    pd:document.getElementById('f-pd').value.trim(),
+  };
+  pendingRows.push(row);refreshPending();
+  document.getElementById('f-dk').value='';document.getElementById('f-pd').value='';
+  document.getElementById('f-br').value='0';document.getElementById('f-tr').value='0';
+  const bl=+document.getElementById('f-bl').value||1;
+  document.getElementById('f-bl').value=(bl%6)+1;
+  if(bl===6){document.getElementById('f-ov').value=(+document.getElementById('f-ov').value||0)+1;}
+}
+function refreshPending(){
+  document.getElementById('pendingCount').textContent=pendingRows.length;
+  document.getElementById('pendingBody').innerHTML=pendingRows.map((r,i)=>`<tr>
+    <td>${r.in}</td><td>${r.ov+1}.${r.bl}</td><td>${r.bat}</td><td>${r.bwl}</td>
+    <td>${r.br}</td><td>${r.blt}</td><td>${r.sn||'—'}</td><td>${r.dn||'—'}</td>
+    <td>${r.dk||'—'}</td>
+    <td><button class="del-btn" onclick="pendingRows.splice(${i},1);refreshPending()">&#10005;</button></td>
+  </tr>`).join('');
+}
+function saveAndUpdate(){
+  if(!pendingRows.length){notify('No balls in queue');return;}
+  const n=pendingRows.length;
+  extraBalls=[...extraBalls,...pendingRows];
+  localStorage.setItem('tb_extra_balls',JSON.stringify(extraBalls));
+  pendingRows=[];refreshPending();closeModal('addDataModal');
+  init();notify('&#10003; '+n+' ball'+( n>1?'s':'')+' saved — Dashboard updated!');
+}
+function clearPending(){pendingRows=[];refreshPending();}
+function clearAllData(){
+  if(!confirm('Clear all added match data? (Original CSV stays)'))return;
+  extraBalls=[];pendingRows=[];localStorage.removeItem('tb_extra_balls');
+  init();notify('&#10003; Added data cleared');
+}
+
+/* ==================== PLAN LINKS ==================== */
+function savePlanLink(){
+  const lbl=document.getElementById('lnk-lbl').value.trim();
+  const url=document.getElementById('lnk-url').value.trim();
+  const player=document.getElementById('lnk-player').value.trim();
+  if(!lbl||!url){alert('Label and URL are required');return;}
+  planLinks.push({label:lbl,url,player});
+  localStorage.setItem('tb_plan_links',JSON.stringify(planLinks));
+  document.getElementById('lnk-lbl').value='';document.getElementById('lnk-url').value='';document.getElementById('lnk-player').value='';
+  notify('&#10003; Plan link saved');refreshLinks();renderPlan();
+}
+function removePlanLink(i){
+  planLinks.splice(i,1);
+  localStorage.setItem('tb_plan_links',JSON.stringify(planLinks));
+  renderPlan();refreshLinks();
+}
+function refreshLinks(){
+  const el=document.getElementById('existingLinks');if(!el)return;
+  if(!planLinks.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="font-size:11px;font-weight:800;color:#64748b;margin-bottom:8px;text-transform:uppercase">Saved Links</div>
+  <table class="rec-table"><thead><tr><th>Label</th><th>URL</th><th>Player</th><th></th></tr></thead><tbody>
+  ${planLinks.map((l,i)=>`<tr>
+    <td>${l.label}</td>
+    <td><a href="${l.url}" target="_blank" style="color:#60a5fa;font-size:11px">${l.url.length>45?l.url.slice(0,45)+'…':l.url}</a></td>
+    <td>${l.player||'Global'}</td>
+    <td><button class="del-btn" onclick="removePlanLink(${i});refreshLinks()">&#10005;</button></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+/* ==================== INIT ==================== */
+function onPlayerChange(){ selPlayer=document.getElementById('playerSelect').value; renderAll(); }
+function setMode(m,btn){ selMode=m; document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderAll(); }
+function notify(msg,dur=3000){ const el=document.getElementById('notify');el.innerHTML=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur); }
+
+function init(){
+  loadStorage();
+  const ab=allBalls();
+  const batters=[...new Set(ab.map(d=>d.bat))].filter(Boolean).sort();
+  const bowlers=[...new Set(ab.map(d=>d.bwl))].filter(Boolean).sort();
+  const teams=[...new Set(ab.flatMap(d=>[d.btt,d.bwt]))].filter(Boolean);
+  const sel=document.getElementById('playerSelect');
+  const prev=sel.value||selPlayer;
+  sel.innerHTML='<option value="">— Select Batter —</option>';
+  batters.forEach(b=>{ const o=document.createElement('option');o.value=b;o.textContent=b;if(b===prev)o.selected=true;sel.appendChild(o); });
+  document.querySelectorAll('#dl-bats,#dl-bwls').forEach(dl=>{ if(!dl)return; dl.innerHTML=''; });
+  batters.forEach(b=>{ ['dl-bats'].forEach(id=>{ const dl=document.getElementById(id);if(dl){const o=document.createElement('option');o.value=b;dl.appendChild(o);} }); });
+  bowlers.forEach(b=>{ const dl=document.getElementById('dl-bwls');if(dl){const o=document.createElement('option');o.value=b;dl.appendChild(o);} });
+  teams.forEach(t=>{ const dl=document.getElementById('dl-teams');if(dl){const o=document.createElement('option');o.value=t;dl.appendChild(o);} });
+  selPlayer=prev;
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
